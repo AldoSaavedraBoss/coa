@@ -13,13 +13,11 @@ const Home = ({ navigation }) => {
     const [loading, setLoading] = useState(false)
     const [clients, setClients] = useState([])
 
-    const getClients = async () => {
+    const getClients = async (data: AuthProps) => {
 
         try {
-            console.log('entro al clients', user?.uid)
             setLoading(true)
-            console.log('data del usuario', user )
-            const response = await axios.get(`http://192.168.0.18:3000/tech/clients/${user.uid}`)
+            const response = await axios.get(`http://192.168.0.18:3000/tech/clients/${data.uid}`)
             if (response.status === 200) {
 
                 setClients(response.data)
@@ -35,7 +33,7 @@ const Home = ({ navigation }) => {
         const getData = async () => {
             const data = await getUserData();
             setUser(data)
-            getClients()
+            getClients(data)
         }
 
         getData()
