@@ -41,6 +41,7 @@ const Login = () => {
                     // Token válido, redirige al usuario a la pantalla principal
                     console.log('Token válido, usuario autenticado');
                     // Navegar a la pantalla principal o inicializar la app
+                    user.data.rol === 'tecnico' ? navigation.navigate('TecnicLayout') : navigation.navigate('ClientLayout')
                 } else {
                     // Token inválido o expirado, eliminar el token y redirigir al inicio de sesión
                     console.log('Token inválido, redirigiendo al inicio de sesión');
