@@ -1,13 +1,14 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, View, Dimensions, FlatList } from 'react-native'
-import { Button, Card, Text, List, Icon, Portal, Modal, TextInput } from 'react-native-paper';
+import { ScrollView, StyleSheet, View, Dimensions, FlatList, } from 'react-native'
+import { Button, Card, Text, List, Icon, Divider, IconButton } from 'react-native-paper';
 import { AuthProps, ClientProps, GardenProps, ReportProps } from '../../../interfaces/user';
 import { getUserData } from '../../../storage/auth';
 import ReportModal from '../../../components/ReportModal';
 import Toast from 'react-native-toast-message';
-import axios from 'axios';
 import { BarChart } from 'react-native-chart-kit';
+import axios from 'axios'
+import SuggestionsModal from '../../../components/SuggestionsModal';
 
 type States = 'features' | 'suggestions' | 'nutrition' | 'pests'
 
@@ -23,12 +24,11 @@ const GardenDetail = ({ route }: DetallesProps) => {
   const [user, setUser] = useState<null | AuthProps>(null)
   const [tab, setTab] = useState<States>('suggestions');
   const [report, setReport] = useState(false)
-  const [suggestion, setSuggestion] = useState('')
-  const [reportDetail, setReportDetail] = useState(false)
+  const [suggestions, setSuggestions] = useState(garden.recomendaciones)
+  const [suggestionsModal, setSuggestionsModal] = useState(false)
 
   const screenWidth = Dimensions.get('window').width;
 
-  console.log(garden.historial_fertilizante)
   useEffect(() => {
     const getData = async () => {
       const data = await getUserData();
@@ -42,10 +42,32 @@ const GardenDetail = ({ route }: DetallesProps) => {
     setTab(value)
   }
 
-
+  const deleteSuggestion = async (suggestion: string) => {
+    console.log(garden.id)
+    try {
+      const response = await axios.delete('http://192.168.0.18:3000/tech/sugerencias', {
+        params: {
+          gardenId: garden.id,
+          suggestion: suggestion
+        }
+      })
+      if (response.status === 200) {
+        setSuggestions(response.data.suggestions)
+        Toast.show({
+          type: "success",
+          text1: 'Ok',
+          text2: 'Sugerencia elminada correctamente correctamente',
+          text1Style: { fontSize: 18 },
+          text2Style: { fontSize: 15 },
+        })
+      }
+    } catch (error) {
+      console.error('Error al mandar la peticion delete de recomendaciones', error)
+    }
+  }
 
   return (
-    <ScrollView nestedScrollEnabled contentContainerStyle={{ flexGrow: 1 }} style={{ flex: 1, paddingHorizontal: 10, paddingTop: 40 }}>
+    <ScrollView nestedScrollEnabled contentContainerStyle={{ flexGrow: 1 }} style={{ flex: 1, paddingHorizontal: 10 }}>
       <Toast />
       <Text variant='titleLarge' style={{ marginHorizontal: 'auto', marginBottom: 20 }}>Detalle de: {garden.nombre}</Text>
       <View style={{ marginHorizontal: 'auto', gap: 10 }}>
@@ -102,17 +124,21 @@ const GardenDetail = ({ route }: DetallesProps) => {
                 <Card.Title title="Sugerencias Generales" />
                 <Card.Content>
                   {
-                    garden.recomendaciones.map((sug, i) => {
+                    suggestions.map((sug, i) => {
                       return (
-                        <View key={i} style={{ flexDirection: 'row', gap: 10 }}>
-                          <Icon source={"check"} size={20}></Icon><Text >{sug}</Text>
+                        <View>
+                          <View key={i} style={{ flexDirection: 'row', gap: 10 }}>
+                            <Icon source={"check"} size={20}></Icon><Text style={{ flexShrink: 1, textAlign: 'left' }}>{sug}</Text>
+                            <IconButton icon='delete' size={20} iconColor='#ffffff' containerColor='#e80729' style={{ marginLeft: 'auto' }} onPress={() => deleteSuggestion(sug)} />
+                          </View>
+                          <Divider key={`Divider-${i}`} bold style={{ marginVertical: 6 }} />
                         </View>
                       )
                     })
                   }
                 </Card.Content>
               </Card>
-              <Button icon='plus' mode='outlined' style={{ width: 250, marginHorizontal: 'auto' }}>Agregar sugerencia general</Button>
+              <Button icon='plus' mode='outlined' onPress={() => setSuggestionsModal(true)} style={{ width: 250, marginHorizontal: 'auto' }}>Agregar sugerencias generales</Button>
             </View>
           )
         }
@@ -197,13 +223,13 @@ const GardenDetail = ({ route }: DetallesProps) => {
                   ListEmptyComponent={<Text variant='labelLarge'>No hay ningnua fertilización</Text>}
                   ListHeaderComponent={<Text variant='titleMedium'>Fertilizantes</Text>}
                 />
-                <Text style={{marginTop: 10}}>Pendientes de aplicar: <Text>{garden.fertilizaciones_pendientes.map((item, i, arr) => (
+                <Text style={{ marginTop: 10 }}>Pendientes de aplicar: <Text>{garden.fertilizaciones_pendientes.map((item, i, arr) => (
                   <Text key={i}>
                     {item}
                     {i < arr.length - 1 ? ',' : ''}
                   </Text>))}</Text></Text>
               </View>
-              <Button icon='plus' mode='outlined' style={{ width: 250, marginHorizontal: 'auto', marginTop: 10, marginBottom: 40 }}>Agregar fertilizante</Button>
+              <Button icon='plus' mode='outlined' style={{ width: 250, marginHorizontal: 'auto', marginTop: 10 }}>Agregar fertilizante</Button>
             </View>
           )
         }
@@ -227,15 +253,7 @@ const GardenDetail = ({ route }: DetallesProps) => {
       <ReportModal visible={report} setVisible={setReport} client={client} garden={garden} />
 
       {/* Suggestion Modal */}
-      <Portal>
-        <Modal visible={false}>
-          <TextInput
-            label='Sugerencia'
-            value={suggestion}
-            onChangeText={text => setSuggestion(text)}
-          />
-        </Modal>
-      </Portal>
+      <SuggestionsModal visible={suggestionsModal} setVisible={setSuggestionsModal} garden={garden} />
     </ScrollView>
   )
 }
