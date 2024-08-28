@@ -27,6 +27,12 @@ export interface GardenProps {
   id: string
   nombre: string
   recomendaciones: string[]
+  fertilizaciones_pendientes: string[]
+  historial_fertilizante: {
+    cantidad: number,
+    fecha: string,
+    formula: string[],
+  }[]
 }
 
 export interface ClientProps {
@@ -40,6 +46,7 @@ export interface ClientProps {
 }
 
 export interface ReportProps {
+  id: string
   nombre_huerto: string,
   recomendaciones: string[],
   nombre: string,

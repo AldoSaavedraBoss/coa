@@ -29,11 +29,11 @@ const ClientLayout = ({ route }: NativeStackScreenProps<RootStackParamList, 'Cli
 
 const TecnicLayout = ({route}) => {
     return (
-        <StackClient.Navigator initialRouteName='Inicio'>
-            <Stack.Screen name='Inicio' component={HomeAgronomo} options={{headerShown: false}}/>
-            <Stack.Screen name='Huertos del cliente' component={ClientDetail} />
-            <StackClient.Screen name='Detalles' component={GardenDetail} />
-        </StackClient.Navigator>
+        <StackTecnic.Navigator initialRouteName='Inicio'>
+            <StackTecnic.Screen name='Inicio' component={HomeAgronomo} options={{headerShown: false}}/>
+            <StackTecnic.Screen name='Huertos del cliente' component={ClientDetail} />
+            <StackTecnic.Screen name='Detalles' component={GardenDetail} />
+        </StackTecnic.Navigator>
     )
 }
 

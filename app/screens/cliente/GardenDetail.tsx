@@ -1,12 +1,13 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
-import { Button, Card, Text, List, Icon, Portal, Modal } from 'react-native-paper';
+import { ScrollView, StyleSheet, View, Dimensions, FlatList } from 'react-native'
+import { Button, Card, Text, List, Icon, Portal, Modal, TextInput } from 'react-native-paper';
 import { AuthProps, ClientProps, GardenProps, ReportProps } from '../../../interfaces/user';
 import { getUserData } from '../../../storage/auth';
 import ReportModal from '../../../components/ReportModal';
 import Toast from 'react-native-toast-message';
 import axios from 'axios';
+import { BarChart } from 'react-native-chart-kit';
 
 type States = 'features' | 'suggestions' | 'nutrition' | 'pests'
 
@@ -22,9 +23,12 @@ const GardenDetail = ({ route }: DetallesProps) => {
   const [user, setUser] = useState<null | AuthProps>(null)
   const [tab, setTab] = useState<States>('suggestions');
   const [report, setReport] = useState(false)
+  const [suggestion, setSuggestion] = useState('')
   const [reportDetail, setReportDetail] = useState(false)
- 
 
+  const screenWidth = Dimensions.get('window').width;
+
+  console.log(garden.historial_fertilizante)
   useEffect(() => {
     const getData = async () => {
       const data = await getUserData();
@@ -38,10 +42,10 @@ const GardenDetail = ({ route }: DetallesProps) => {
     setTab(value)
   }
 
-  
+
 
   return (
-    <View style={{ flex: 1, paddingHorizontal: 10, paddingTop: 40 }}>
+    <ScrollView nestedScrollEnabled contentContainerStyle={{ flexGrow: 1 }} style={{ flex: 1, paddingHorizontal: 10, paddingTop: 40 }}>
       <Toast />
       <Text variant='titleLarge' style={{ marginHorizontal: 'auto', marginBottom: 20 }}>Detalle de: {garden.nombre}</Text>
       <View style={{ marginHorizontal: 'auto', gap: 10 }}>
@@ -93,20 +97,115 @@ const GardenDetail = ({ route }: DetallesProps) => {
         }
         {
           tab === 'suggestions' && (
-            <Card>
-              <Card.Title title="Sugerencias" />
-              <Card.Content>
-                {
-                  garden.recomendaciones.map((sug, i) => {
-                    return (
-                      <View key={i} style={{ flexDirection: 'row', gap: 10 }}>
-                        <Icon source={"check"} size={20}></Icon><Text >{sug}</Text>
-                      </View>
-                    )
-                  })
-                }
-              </Card.Content>
-            </Card>)
+            <View style={{ gap: 20 }}>
+              <Card>
+                <Card.Title title="Sugerencias Generales" />
+                <Card.Content>
+                  {
+                    garden.recomendaciones.map((sug, i) => {
+                      return (
+                        <View key={i} style={{ flexDirection: 'row', gap: 10 }}>
+                          <Icon source={"check"} size={20}></Icon><Text >{sug}</Text>
+                        </View>
+                      )
+                    })
+                  }
+                </Card.Content>
+              </Card>
+              <Button icon='plus' mode='outlined' style={{ width: 250, marginHorizontal: 'auto' }}>Agregar sugerencia general</Button>
+            </View>
+          )
+        }
+        {
+          tab === 'nutrition' && (
+            <View style={{ gap: 20 }}>
+              <FlatList
+                horizontal
+                data={[{
+                  labels: ['N', 'P', 'K', 'Ca', 'Mg', 'S', 'B', 'Zn', 'Mn', 'Mo'],
+                  datasets: [
+                    {
+                      data: [
+                        (Math.random() * 100).toFixed(1),
+                        (Math.random() * 100).toFixed(1),
+                        (Math.random() * 100).toFixed(1),
+                        (Math.random() * 100).toFixed(1),
+                        (Math.random() * 100).toFixed(1),
+                        (Math.random() * 100).toFixed(1),
+                        (Math.random() * 100).toFixed(1),
+                        (Math.random() * 100).toFixed(1),
+                        (Math.random() * 100).toFixed(1),
+                        (Math.random() * 100).toFixed(1),
+                      ]
+                    }
+                  ]
+                }]}
+                renderItem={({ item }) => (
+                  <BarChart
+                    yAxisSuffix=''
+                    width={600}
+                    height={220}
+                    data={item}
+                    yAxisLabel='%'
+                    fromZero
+                    showBarTops
+                    showValuesOnTopOfBars
+                    chartConfig={{
+                      backgroundColor: "#e26a00",
+                      backgroundGradientFrom: "#6a1b9a",
+                      backgroundGradientTo: "#4a148c",
+                      decimalPlaces: 2, // optional, defaults to 2dp
+                      color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                      labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                      strokeWidth: 2,
+                      barPercentage: 0.8,
+                      fillShadowGradient: "#8e24aa",
+                      fillShadowGradientOpacity: 1,
+                      style: {
+                        borderRadius: 16
+                      },
+                      propsForDots: {
+                        r: "6",
+                        strokeWidth: "2",
+                        stroke: "#ffa726"
+                      }
+                    }}
+                    style={{
+                      marginVertical: 8,
+                      borderRadius: 16
+                    }}
+                  />
+                )}
+                keyExtractor={(item, index) => index.toString()}
+              >
+
+              </FlatList>
+              <View>
+                <FlatList
+                  data={garden.historial_fertilizante}
+                  renderItem={({ item }) => (
+                    <View style={{ flexDirection: 'row' }}>
+                      <Icon source="chevron-right" color='black' size={20} />
+                      <Text style={{ flexShrink: 1 }}><Text style={{ fontWeight: 'bold' }}>{new Date(item.fecha).toLocaleDateString()}</Text>, se aplicó <Text style={{ fontWeight: 'bold' }}>{item.cantidad}Kg</Text> de la formula {item.formula.map((part, index) => (
+                        <Text key={index} style={{ fontWeight: 'bold' }}>
+                          {part}
+                          {index < item.formula.length - 1 ? '-' : ''}
+                        </Text>
+                      ))} por árbol</Text>
+                    </View>
+                  )}
+                  ListEmptyComponent={<Text variant='labelLarge'>No hay ningnua fertilización</Text>}
+                  ListHeaderComponent={<Text variant='titleMedium'>Fertilizantes</Text>}
+                />
+                <Text style={{marginTop: 10}}>Pendientes de aplicar: <Text>{garden.fertilizaciones_pendientes.map((item, i, arr) => (
+                  <Text key={i}>
+                    {item}
+                    {i < arr.length - 1 ? ',' : ''}
+                  </Text>))}</Text></Text>
+              </View>
+              <Button icon='plus' mode='outlined' style={{ width: 250, marginHorizontal: 'auto', marginTop: 10, marginBottom: 40 }}>Agregar fertilizante</Button>
+            </View>
+          )
         }
       </View>
       {/* ----- Buttons ----- */}
@@ -125,10 +224,19 @@ const GardenDetail = ({ route }: DetallesProps) => {
         }
       </View>
 
-      <ReportModal visible={report} setVisible={setReport} techData={user} client={client} garden={garden}/>
+      <ReportModal visible={report} setVisible={setReport} client={client} garden={garden} />
 
-      
-    </View>
+      {/* Suggestion Modal */}
+      <Portal>
+        <Modal visible={false}>
+          <TextInput
+            label='Sugerencia'
+            value={suggestion}
+            onChangeText={text => setSuggestion(text)}
+          />
+        </Modal>
+      </Portal>
+    </ScrollView>
   )
 }
 

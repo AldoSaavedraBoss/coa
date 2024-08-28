@@ -10,8 +10,8 @@ import Toast from 'react-native-toast-message';
 interface ReportModalProps {
     visible: boolean,
     setVisible: React.Dispatch<React.SetStateAction<boolean>>,
-    techData: AuthProps | null,
-    garden: GardenProps
+    // techData: AuthProps | null,
+    garden?: GardenProps
     client: ClientProps
     data?: ReportProps | null
     setData?: React.Dispatch<React.SetStateAction<ReportProps | null>>
@@ -39,10 +39,10 @@ interface FormFields {
     estado_general: string
 }
 
-const ReportModal = ({ visible, setVisible, techData, garden, client, data, setData }: ReportModalProps) => {
+const ReportModal = ({ visible, setVisible, garden, client, data, setData }: ReportModalProps) => {
     const [form, setForm] = useState<FormFields>({
         nombre: data?.nombre ?? `${client.nombre} ${client.apellido}`,
-        huerto: data?.nombre_huerto ?? garden.nombre,
+        huerto: data?.nombre_huerto ?? garden?.nombre ?? '',
         fecha: data?.fecha ?? new Date(),
         etapa: data?.etapa_fenologica ?? '',
         plagas: data?.plagas ?? [{
@@ -107,7 +107,7 @@ const ReportModal = ({ visible, setVisible, techData, garden, client, data, setD
     };
 
     const didUnmount = () => {
-        setData(null)
+        if (setData) setData(null)
         setVisible(false)
     }
 
@@ -130,12 +130,12 @@ const ReportModal = ({ visible, setVisible, techData, garden, client, data, setD
             return
         }
         const report = {
-            agricultor_id: garden.cliente_id,
+            agricultor_id: garden?.cliente_id ?? '',
             enfermedades: form.enfermedades,
             estado_general: form.estado_general,
             etapa_fenologica: form.etapa,
             fecha: form.fecha,
-            huerto_id: garden.id,
+            huerto_id: garden?.id ?? '',
             observaciones: form.observaciones,
             plagas: form.plagas,
             recomendaciones: form.recomendaciones,
@@ -179,6 +179,14 @@ const ReportModal = ({ visible, setVisible, techData, garden, client, data, setD
             <Toast />
             <Modal style={{ flex: 1, backgroundColor: '#fff' }} visible={visible} onDismiss={didUnmount}>
                 <ScrollView style={{ paddingHorizontal: 10, paddingBottom: 20, marginTop: 10 }}>
+                    <IconButton
+                        icon="close"
+                        iconColor='#777777'
+                        size={20}
+                        style={{marginLeft: 'auto'}}
+                        containerColor="#dddddd"
+                        onPress={didUnmount}
+                    />
                     {show && (
                         <DateTimePicker
                             testID="dateTimePicker"
@@ -335,14 +343,14 @@ const ReportModal = ({ visible, setVisible, techData, garden, client, data, setD
                         renderItem={(item) => {
                             return (<View style={styles.item}>
                                 <View style={{ backgroundColor: item.color, width: 20, height: 20 }}></View>
-                                <Text style={styles.textItem}>{item.jvalue}</Text>
+                                <Text style={styles.textItem}>{item.value}</Text>
                             </View>)
                         }}
                     />
                     <HelperText type="error" visible={errors.includes('generalState')} style={{ marginBottom: 16 }}>Selecciona un estado general del huerto</HelperText>
 
                     {
-                        data === null ? (<Button icon='pencil-plus' textColor="#fff" onPress={makeReport} style={{ backgroundColor: '#8740a2', marginBottom: 10 }}>Hacer Reporte</Button>)
+                        (data === null || data === undefined) ? (<Button icon='pencil-plus' textColor="#fff" onPress={makeReport} style={{ backgroundColor: '#8740a2', marginBottom: 10 }}>Hacer Reporte</Button>)
                             : (
                                 <Button icon='pencil-plus' textColor="#fff" onPress={editReport} style={{ backgroundColor: '#8740a2', marginBottom: 10 }}>Editar Reporte</Button>
                             )
