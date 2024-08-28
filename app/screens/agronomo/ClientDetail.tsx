@@ -24,7 +24,7 @@ const ClientDetail = ({ route, navigation }: DetallesProps) => {
     useEffect(() => {
         const getData = async () => {
             try {
-                const response = await axios.get(`http://192.168.0.18:3000/gardens/${client.id}`)
+                const response = await axios.get(`http://192.168.1.14:3000/gardens/${client.id}`)
                 setGardens(response.data)
             } catch (error) {
 
@@ -41,7 +41,7 @@ const ClientDetail = ({ route, navigation }: DetallesProps) => {
 
     const getReportHistory = async () => {
         try {
-          const response = await axios.get(`http://192.168.0.18:3000/tech/reportes/${client.id}`)
+          const response = await axios.get(`http://192.168.1.14:3000/tech/reportes/${client.id}`)
           if (response.status === 200) {
             setModalReport(response.data)
           }

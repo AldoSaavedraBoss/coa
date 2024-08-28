@@ -18,7 +18,7 @@ const Login = () => {
 
     const verifyToken = async (token: string) => {
         try {
-            const response = await axios.get('http://192.168.0.18:3000/verify-token', {
+            const response = await axios.get('http://192.168.1.14:3000/verify-token', {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -61,7 +61,7 @@ const Login = () => {
     const signIn = async () => {
         try {
             setLoading(true)
-            const response = await axios.post(`http://192.168.0.18:3000/login`, {
+            const response = await axios.post(`http://192.168.1.14:3000/login`, {
                 email,
                 password
             }, {

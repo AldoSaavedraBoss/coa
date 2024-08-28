@@ -144,7 +144,7 @@ const ReportModal = ({ visible, setVisible, techData, garden, client, data, setD
         }
         console.log('reporte hecho', report)
         try {
-            const response = await axios.post('http://192.168.0.18:3000/tech/reportes', report)
+            const response = await axios.post('http://192.168.1.14:3000/tech/reportes', report)
             console.log('respuesta de insertar un reporte', response.data)
             if (response.status === 201) {
                 Toast.show({

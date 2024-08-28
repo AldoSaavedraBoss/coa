@@ -17,7 +17,7 @@ const Home = ({ navigation }) => {
 
         try {
             setLoading(true)
-            const response = await axios.get(`http://192.168.0.18:3000/tech/clients/${data.uid}`)
+            const response = await axios.get(`http://192.168.1.14:3000/tech/clients/${data.uid}`)
             if (response.status === 200) {
 
                 setClients(response.data)
