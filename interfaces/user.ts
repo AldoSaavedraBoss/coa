@@ -13,66 +13,68 @@ export interface AuthProps {
   }
 }
 
+export type GardenFeatures = {
+  cobertura: string
+  densidad: string
+  edad: string
+  superficie: string
+  tipo_suelo: string
+  ubicacion: string
+  variedad: string
+}
+
 export interface GardenProps {
-  caracteristicas: {
-    cobertura: string
-    densidad: string
-    edad: string
-    superficie: string
-    tipo_suelo: string
-    ubicacion: string
-    variedad: string
-  }
+  caracteristicas: GardenFeatures
   cliente_id: string
   id: string
   nombre: string
   recomendaciones: string[]
   fertilizaciones_pendientes: string[]
   historial_fertilizante: {
-    cantidad: number,
-    fecha: string,
-    formula: string[],
+    cantidad: number
+    fecha: string
+    formula: string[]
   }[]
 }
 
 export interface ClientProps {
-    id: string,
-    tecnico_id: string,
-    email: string,
-    apellido: string,
-    rol: rol,
-    creacion: { seconds: number, nanoseconds: number },
-    nombre: string
+  id: string
+  tecnico_id: string
+  email: string
+  apellido: string
+  rol: rol
+  creacion: { seconds: number; nanoseconds: number }
+  nombre: string
 }
 
 export interface ReportProps {
   id: string
-  nombre_huerto: string,
-  recomendaciones: string[],
-  nombre: string,
+  nombre_huerto: string
+  recomendaciones: string[]
+  nombre: string
   plagas: {
-    accion: string,
-    ixs: number,
-    plaga: string,
+    accion: string
+    ixs: number
+    plaga: string
     producto: string
-  }[],
-  estado_general:string,
-  observaciones: string[],
+  }[]
+  estado_general: string
+  observaciones: string[]
   enfermedades: {
-    accion: string,
-    ixs: number,
-    enfermedad: string,
+    accion: string
+    ixs: number
+    enfermedad: string
     producto: string
-  }[],
-  etapa_fenologica: string,
-  agricultor_id: string,
-  huerto_id: string,
+  }[]
+  etapa_fenologica: string
+  agricultor_id: string
+  huerto_id: string
   fecha: string
 }
 
 export interface PestsDiseasesProps {
-  action: string,
-  ixs: number,
-  pest: string,
+  action: string
+  ixs: number
+  pest: string
   product: string
 }
