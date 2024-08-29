@@ -43,7 +43,7 @@ export interface ClientProps {
   email: string
   apellido: string
   rol: rol
-  creacion: { seconds: number; nanoseconds: number }
+  creacion: string
   nombre: string
 }
 

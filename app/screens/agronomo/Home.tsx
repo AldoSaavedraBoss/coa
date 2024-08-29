@@ -11,7 +11,7 @@ const Home = ({ navigation }) => {
     const [tab, setTab] = useState<HomeState>('profile')
     const [user, setUser] = useState<null | AuthProps>(null)
     const [loading, setLoading] = useState(false)
-    const [clients, setClients] = useState([])
+    const [clients, setClients] = useState<ClientProps[]>([])
 
     const getClients = async (data: AuthProps) => {
 
@@ -53,14 +53,14 @@ const Home = ({ navigation }) => {
         <View style={{ flex: 1, padding: 20 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 {/* <Image source={{ uri: 'https://picsum.photos/200/300' }} /> */}
-                <Text style={{ fontSize: 18 }}>{new Date().toLocaleDateString(undefined, {
+                <Text variant='labelLarge' style={{ fontSize: 18 }}>{new Date().toLocaleDateString(undefined, {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',
                 })}</Text>
                 <Button mode='elevated' textColor='#007901' onPress={() => logout()}>Cerrar Sesión</Button>
             </View>
-            <Text>{user?.data.nombre}</Text>
+            <Text variant='headlineSmall'>ING. {user?.data.nombre} {user?.data.apellidos}</Text>
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
                 <Button mode={tab === 'profile' ? 'contained' : 'outlined'} onPress={() => setTab('profile')} style={{ width: 150 }}>Mi perfil</Button>
                 <Button mode={tab === 'producers' ? 'contained' : 'outlined'} onPress={() => setTab('producers')} style={{ width: 150 }}>Productores</Button>
@@ -88,6 +88,13 @@ const Home = ({ navigation }) => {
                     }}>
 
                 </FlatList>)
+            }
+            {
+                tab === 'profile' && (
+                    <View>
+                        
+                    </View>
+                )
             }
         </View>
     )
