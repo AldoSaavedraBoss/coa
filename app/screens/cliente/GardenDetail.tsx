@@ -9,6 +9,7 @@ import Toast from 'react-native-toast-message';
 import { BarChart } from 'react-native-chart-kit';
 import axios from 'axios'
 import SuggestionsModal from '../../../components/SuggestionsModal';
+import FeaturesModal from '../../../components/FeaturesModal';
 
 type States = 'features' | 'suggestions' | 'nutrition' | 'pests'
 
@@ -26,6 +27,7 @@ const GardenDetail = ({ route }: DetallesProps) => {
   const [report, setReport] = useState(false)
   const [suggestions, setSuggestions] = useState(garden.recomendaciones)
   const [suggestionsModal, setSuggestionsModal] = useState(false)
+  const [featuresModal, setFeaturesModal] = useState(false)
 
   const screenWidth = Dimensions.get('window').width;
 
@@ -238,7 +240,7 @@ const GardenDetail = ({ route }: DetallesProps) => {
       <View style={{ marginTop: 20 }}>
         {
           user !== null && user.data.rol === 'tecnico' && tab === 'features' && (
-            <Button icon='pencil' mode='elevated'>Modificar caracteristica</Button>
+            <Button icon='pencil' mode='elevated' onPress={() => setFeaturesModal(true)}>Modificar caracteristica</Button>
           )
         }
         {
@@ -254,6 +256,9 @@ const GardenDetail = ({ route }: DetallesProps) => {
 
       {/* Suggestion Modal */}
       <SuggestionsModal visible={suggestionsModal} setVisible={setSuggestionsModal} garden={garden} />
+
+      {/* Features Modal */}
+      <FeaturesModal visible={featuresModal} setVisible={setFeaturesModal} garden={garden}/>
     </ScrollView>
   )
 }

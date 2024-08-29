@@ -20,7 +20,6 @@ const SuggestionsModal = ({ visible, setVisible, garden }: SuggestionsModalProps
 
     const postGeneralSuggestions = async () => {
         const newSuggestions = generalSuggestions.filter(sugg => sugg !== '')
-        console.log(newSuggestions)
         if (newSuggestions.length === 0) {
             Toast.show({
 
