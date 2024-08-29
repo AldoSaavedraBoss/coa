@@ -10,6 +10,7 @@ import { BarChart } from 'react-native-chart-kit';
 import axios from 'axios'
 import SuggestionsModal from '../../../components/SuggestionsModal';
 import FeaturesModal from '../../../components/FeaturesModal';
+import FertilizerModal from '../../../components/FertilizerModal';
 
 type States = 'features' | 'suggestions' | 'nutrition' | 'pests'
 
@@ -28,6 +29,7 @@ const GardenDetail = ({ route }: DetallesProps) => {
   const [suggestions, setSuggestions] = useState(garden.recomendaciones)
   const [suggestionsModal, setSuggestionsModal] = useState(false)
   const [featuresModal, setFeaturesModal] = useState(false)
+  const [fertilizerModal, setFertilizerModal] = useState(true)
 
   const screenWidth = Dimensions.get('window').width;
 
@@ -128,12 +130,12 @@ const GardenDetail = ({ route }: DetallesProps) => {
                   {
                     suggestions.map((sug, i) => {
                       return (
-                        <View>
-                          <View key={i} style={{ flexDirection: 'row', gap: 10 }}>
+                        <View key={i}>
+                          <View style={{ flexDirection: 'row', gap: 10 }}>
                             <Icon source={"check"} size={20}></Icon><Text style={{ flexShrink: 1, textAlign: 'left' }}>{sug}</Text>
                             <IconButton icon='delete' size={20} iconColor='#ffffff' containerColor='#e80729' style={{ marginLeft: 'auto' }} onPress={() => deleteSuggestion(sug)} />
                           </View>
-                          <Divider key={`Divider-${i}`} bold style={{ marginVertical: 6 }} />
+                          <Divider bold style={{ marginVertical: 6 }} />
                         </View>
                       )
                     })
@@ -231,7 +233,7 @@ const GardenDetail = ({ route }: DetallesProps) => {
                     {i < arr.length - 1 ? ',' : ''}
                   </Text>))}</Text></Text>
               </View>
-              <Button icon='plus' mode='outlined' style={{ width: 250, marginHorizontal: 'auto', marginTop: 10 }}>Agregar fertilizante</Button>
+              <Button icon='plus' mode='outlined' onPress={() => setFertilizerModal(true)} style={{ width: 250, marginHorizontal: 'auto', marginTop: 10 }}>Agregar fertilizante</Button>
             </View>
           )
         }
@@ -259,6 +261,9 @@ const GardenDetail = ({ route }: DetallesProps) => {
 
       {/* Features Modal */}
       <FeaturesModal visible={featuresModal} setVisible={setFeaturesModal} garden={garden}/>
+
+      {/* Fertilizer Modal */}
+      <FertilizerModal visible={fertilizerModal} setVisible={setFertilizerModal} garden={garden}/>
     </ScrollView>
   )
 }
