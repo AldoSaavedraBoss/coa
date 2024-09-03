@@ -29,7 +29,7 @@ const GardenDetail = ({ route }: DetallesProps) => {
   const [suggestions, setSuggestions] = useState(garden.recomendaciones)
   const [suggestionsModal, setSuggestionsModal] = useState(false)
   const [featuresModal, setFeaturesModal] = useState(false)
-  const [fertilizerModal, setFertilizerModal] = useState(true)
+  const [fertilizerModal, setFertilizerModal] = useState(false)
 
   const screenWidth = Dimensions.get('window').width;
 
@@ -242,7 +242,10 @@ const GardenDetail = ({ route }: DetallesProps) => {
       <View style={{ marginTop: 20 }}>
         {
           user !== null && user.data.rol === 'tecnico' && tab === 'features' && (
-            <Button icon='pencil' mode='elevated' onPress={() => setFeaturesModal(true)}>Modificar caracteristica</Button>
+            <View>
+              <Button icon='pencil' mode='elevated' onPress={() => setFeaturesModal(true)}>Agregar caracteristicas</Button>
+              <Button icon='pencil' mode='elevated' onPress={() => setFeaturesModal(true)}>Modificar caracteristicas</Button>
+            </View>
           )
         }
         {

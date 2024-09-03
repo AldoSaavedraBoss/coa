@@ -111,7 +111,7 @@ const FertilizerModal = ({ visible, setVisible, garden }: FertilizerModalProps) 
                     </View>
                     <View style={{position: 'relative'}}>
                         <Pressable onPress={showDatepicker} style={{ backgroundColor: 'transparent', width: '100%', height: '100%', position: 'absolute', zIndex: 2 }} />
-                        <View style={{ flexDirection: 'row', alignItems: 'center', width: 120 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
                             <Text style={{width: 80}} variant='labelLarge'>Fecha: </Text>
                             <TextInput
                                 value={fertilization.date.toLocaleDateString()}
