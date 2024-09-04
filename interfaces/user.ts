@@ -14,17 +14,11 @@ export interface AuthProps {
 }
 
 export type GardenFeatures = {
-  cobertura: string
-  densidad: string
-  edad: string
-  superficie: string
-  tipo_suelo: string
-  ubicacion: string
-  variedad: string
+  [key: string]: any
 }
 
 export interface GardenProps {
-  caracteristicas: GardenFeatures
+  caracteristicas:GardenFeatures
   cliente_id: string
   id: string
   nombre: string

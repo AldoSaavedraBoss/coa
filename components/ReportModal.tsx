@@ -40,6 +40,7 @@ interface FormFields {
 }
 
 const ReportModal = ({ visible, setVisible, garden, client, data, setData }: ReportModalProps) => {
+    console.log('plagasss',data?.plagas)
     const [form, setForm] = useState<FormFields>({
         nombre: data?.nombre ?? `${client.nombre} ${client.apellido}`,
         huerto: data?.nombre_huerto ?? garden?.nombre ?? '',
@@ -78,6 +79,8 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
             value: 'Todo bien',
             color: '#5ccb5f'
         }]
+    
+
     const [errors, setErrors] = useState<string[]>([])
     const [mode, setMode] = useState('date');
     const [show, setShow] = useState(false);
@@ -110,6 +113,27 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
         if (setData) setData(null)
         setVisible(false)
     }
+
+    useEffect(() => {
+        if (data?.agricultor_id) {
+            setForm({
+                nombre: `${client.nombre} ${client.apellido}`,
+                huerto: data.nombre_huerto,
+                fecha: data.fecha,
+                etapa: data.etapa_fenologica,
+                plagas: data.plagas ?? [{
+                    plaga: '',
+                    ixs: 0,
+                    accion: '',
+                    producto: ''
+                }],
+                enfermedades: data.enfermedades,
+                recomendaciones: data.recomendaciones,
+                observaciones: data.observaciones,
+                estado_general: data.estado_general
+            });
+        }
+    }, [data, client, garden]);
 
     const makeReport = async () => {
         setErrors([])
@@ -179,6 +203,7 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
             <Toast />
             <Modal style={{ flex: 1, backgroundColor: '#fff' }} visible={visible} onDismiss={didUnmount}>
                 <ScrollView style={{ paddingHorizontal: 10, paddingBottom: 20, marginTop: 10 }}>
+                    <Text>{data?.id}</Text>
                     <IconButton
                         icon="close"
                         iconColor='#777777'
@@ -205,7 +230,7 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
                     <Text variant="titleLarge" style={{ marginVertical: 10, marginHorizontal: 'auto' }}>Plagas</Text>
 
                     {
-                        form.plagas.map((item, i) => {
+                        form.plagas ? (form.plagas.map((item, i) => {
                             return (
                                 <View key={i} style={styles.plagueContainer}>
                                     <TextInput label={'Plaga'} value={item.plaga} onChangeText={(text) => setForm(prev => {
@@ -213,7 +238,7 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
                                         updatedPests[i].plaga = text
                                         return { ...prev, plagas: updatedPests }
                                     })} />
-                                    <TextInput label={'I x S'} keyboardType="numeric" value={`${item.ixs}`} onChangeText={(text) => setForm(prev => {
+                                    <TextInput label={'I x S'} keyboardType="numeric" value={`${item.ixs}%`} onChangeText={(text) => setForm(prev => {
                                         const updatedPests = [...prev.plagas]
                                         updatedPests[i].ixs = Number(text)
                                         return { ...prev, plagas: updatedPests }
@@ -230,7 +255,8 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
                                     })} />
                                 </View>
                             )
-                        })
+                        }))
+                        : null
                     }
                     <Button icon="plus" mode="contained" onPress={() => setForm(prev => ({
                         ...prev,
@@ -240,7 +266,7 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
                     <Text variant="titleLarge" style={{ marginVertical: 10, marginHorizontal: 'auto' }}>Enfermedades</Text>
 
                     {
-                        form.enfermedades.map((item, i) => {
+                        form.enfermedades ? (form.enfermedades?.map((item, i) => {
                             return (
                                 <View key={i} style={styles.plagueContainer}>
                                     <TextInput label={'Enfermedad'} value={item.enfermedad} onChangeText={(text) => setForm(prev => {
@@ -248,7 +274,7 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
                                         updateDisease[i].enfermedad = text
                                         return { ...prev, enfermedades: updateDisease }
                                     })} />
-                                    <TextInput label={'I x S'} keyboardType="numeric" value={`${item.ixs}`} onChangeText={(text) => setForm(prev => {
+                                    <TextInput label={'I x S'} keyboardType="numeric" value={`${item.ixs}%`} onChangeText={(text) => setForm(prev => {
                                         const updateDisease = [...prev.enfermedades]
                                         updateDisease[i].ixs = Number(text)
                                         return { ...prev, enfermedades: updateDisease }
@@ -265,7 +291,7 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
                                     })} />
                                 </View>
                             )
-                        })
+                        })) : null
                     }
                     <Button icon="plus" mode="contained" onPress={() => setForm(prev => ({
                         ...prev,
@@ -276,7 +302,7 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
 
                     <View style={{ gap: 10 }}>
                         {
-                            form.recomendaciones.map((item, i) => (
+                           form.recomendaciones ? (form.recomendaciones?.map((item, i) => (
                                 <TextInput
                                     key={`suggestion-${i}`}
                                     label={`Recomendación: ${i + 1}`}
@@ -290,7 +316,7 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
                                         setForm(prev => ({ ...prev, recomendaciones: newSuggestions }))
                                     }}
                                 />
-                            ))
+                            ))) : null
                         }
                         <HelperText type="error" visible={errors.includes('suggestions')}>Debe incluir por lo menos una Recomendación</HelperText>
                     </View>
@@ -308,7 +334,7 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
 
                     <View style={{ gap: 10 }}>
                         {
-                            form.observaciones.map((item, i) => (
+                            form.observaciones ? (form.observaciones?.map((item, i) => (
                                 <TextInput
                                     key={`observation-${i}`}
                                     label={`Observación: ${i + 1}`}
@@ -322,7 +348,7 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
                                         setForm(prev => ({ ...prev, observaciones: newObservations }))
                                     }}
                                 />
-                            ))
+                            ))) : null
                         }
                         <HelperText type="error" visible={errors.includes('observations')}>Debe incluir por lo menos una Observación</HelperText>
                     </View>

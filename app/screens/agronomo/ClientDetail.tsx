@@ -45,7 +45,6 @@ const ClientDetail = ({ route, navigation }: DetallesProps) => {
       const response = await axios.get(`http://192.168.0.18:3000/tech/reportes/${client.id}`)
       if (response.status === 200) {
         setReportsList(response.data)
-        console.log('lista de reportes en clientdetail', response.data)
       }
     } catch (error) {
       console.error('Error al obtener los reportes', error)
