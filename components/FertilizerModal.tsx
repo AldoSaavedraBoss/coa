@@ -3,8 +3,8 @@ import { IconButton, Portal, Modal, TextInput, Text, Button } from 'react-native
 import Toast from 'react-native-toast-message'
 import { GardenProps } from '../interfaces/user'
 import { useRef, useState } from 'react'
-import OTPTextInput from 'react-native-otp-textinput'
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from '@react-native-picker/picker';
 import axios from 'axios'
 
 interface FertilizerModalProps {
@@ -17,20 +17,14 @@ interface FertilizerModalProps {
 const FertilizerModal = ({ visible, setVisible, garden }: FertilizerModalProps) => {
     let otpInput = useRef(null);
     const [fertilization, setFertilization] = useState({
-        product: [],
+        product: "",
         date: new Date(),
-        amount: 0
+        amount: 0,
+        area: ""
     })
     const [mode, setMode] = useState('date');
     const [show, setShow] = useState(false);
 
-    const clearText = () => {
-        if (otpInput.current) otpInput.current.clear();
-    }
-
-    const setText = () => {
-        if (otpInput.current) otpInput.current.setValue("1234");
-    }
 
     const onChange = (event: Event, selectedDate: Date) => {
         const currentDate = selectedDate;
@@ -50,7 +44,17 @@ const FertilizerModal = ({ visible, setVisible, garden }: FertilizerModalProps) 
     };
 
     const postFertilizer = async () => {
-        setText()
+        if (fertilization.product === '') {
+            Toast.show({
+                type: "info",
+                text1: 'Algo falta...',
+                text2: 'Fertilizante',
+                text1Style: { fontSize: 18 },
+                text2Style: { fontSize: 15 },
+            })
+
+            return
+        }
 
         const newfertilizer = {
             amount: fertilization.amount,
@@ -98,21 +102,19 @@ const FertilizerModal = ({ visible, setVisible, garden }: FertilizerModalProps) 
                             setVisible(false)
                         }}
                     />
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 25 }}>
                         <Text variant='labelLarge'>Formula:</Text>
-                        <OTPTextInput
-                            textInputStyle={{ borderStyle: 'solid', borderColor: 'red', borderWidth: 2, borderRadius: 8, width: 40, height: 40 }}
-                            containerStyle={{ width: 170 }}
-                            inputCellLength={2}
-                            inputCount={3}
-                            handleTextChange={(text) => console.log(text)}
-                            ref={otpInput}
+                        <TextInput
+                            style={{ width: 170 }}
+                            value={fertilization.product}
+                            onChangeText={text => setFertilization(prev => ({ ...prev, product: text }))}
                         />
+
                     </View>
-                    <View style={{position: 'relative'}}>
+                    <View style={{ position: 'relative' }}>
                         <Pressable onPress={showDatepicker} style={{ backgroundColor: 'transparent', width: '100%', height: '100%', position: 'absolute', zIndex: 2 }} />
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
-                            <Text style={{width: 80}} variant='labelLarge'>Fecha: </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', width: 170 }}>
+                            <Text style={{ width: 80 }} variant='labelLarge'>Fecha: </Text>
                             <TextInput
                                 value={fertilization.date.toLocaleDateString()}
                                 style={{ width: '100%' }}
@@ -125,11 +127,24 @@ const FertilizerModal = ({ visible, setVisible, garden }: FertilizerModalProps) 
                             keyboardType='numbers-and-punctuation'
                             value={fertilization.amount.toString()}
                             onChangeText={(text) => setFertilization(prev => ({ ...prev, amount: Number(text) }))}
-                            style={{width: 120}}
+                            style={{ width: 170 }}
                         />
                     </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 45 }}>
+                    <Text variant='labelLarge'>Área:</Text>
+                        <Picker
+                        style={{width: 170}}
+                            selectedValue={fertilization.area}
+                            onValueChange={(itemValue, itemIndex) =>
+                                setFertilization(prev => ({...prev, area: itemValue}))
+                            }>
+                            <Picker.Item label="Árbol" value="arbol" />
+                            <Picker.Item label="Hectárea" value="hectarea" />
+                            <Picker.Item label="Huerto" value="huerto" />
+                        </Picker>
+                    </View>
 
-                    <Button icon='archive-edit' mode='contained' onPress={postFertilizer} style={{width: 270, marginHorizontal: 'auto', marginTop: 20}}>Agregar fertilizante</Button>
+                    <Button icon='archive-edit' mode='contained' onPress={postFertilizer} style={{ width: 270, marginHorizontal: 'auto', marginTop: 20 }}>Agregar fertilizante</Button>
                     {show && (
                         <DateTimePicker
                             testID="dateTimePicker"
@@ -139,40 +154,8 @@ const FertilizerModal = ({ visible, setVisible, garden }: FertilizerModalProps) 
                             onChange={onChange}
                         />
                     )}
-                    {/* <TextInput
-                    label='Densidad'
-                    value={featuresState.densidad}
-                    onChangeText={(text) => setFeaturesState(prev => ({ ...prev, densidad: text }))}
-                />
-                <TextInput
-                    label='Edad'
-                    value={featuresState.edad}
-                    onChangeText={(text) => setFeaturesState(prev => ({ ...prev, edad: text }))}
-                />
-                <TextInput
-                    label='Superficie'
-                    value={featuresState.superficie}
-                    onChangeText={(text) => setFeaturesState(prev => ({ ...prev, superficie: text }))}
-                />
-                <TextInput
-                    label='Tipo de suelo'
-                    value={featuresState.tipo_suelo}
-                    onChangeText={(text) => setFeaturesState(prev => ({ ...prev, tipo_suelo: text }))}
-                />
-                <TextInput
-                    label='Ubicación'
-                    value={featuresState.ubicacion}
-                    onChangeText={(text) => setFeaturesState(prev => ({ ...prev, ubicacion: text }))}
-                />
-                <TextInput
-                    label='Variedad'
-                    value={featuresState.variedad}
-                    onChangeText={(text) => setFeaturesState(prev => ({ ...prev, variedad: text }))}
-                />
-
-                 */}
                 </View>
-                <Toast />
+                <Toast position='bottom' />
             </Modal>
         </Portal>
     )

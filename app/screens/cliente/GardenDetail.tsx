@@ -28,10 +28,27 @@ const GardenDetail = ({ route }: DetallesProps) => {
   const [report, setReport] = useState(false)
   const [suggestions, setSuggestions] = useState(garden.recomendaciones)
   const [suggestionsModal, setSuggestionsModal] = useState(false)
+  const [featuresModalEdit, setFeaturesModalEdit] = useState(false)
   const [featuresModal, setFeaturesModal] = useState(false)
   const [fertilizerModal, setFertilizerModal] = useState(false)
 
-  const screenWidth = Dimensions.get('window').width;
+  const characteristics = Object.entries(garden.caracteristicas).map(([key, value]) => ({
+    key,
+    value
+  }))
+
+  // <Card>
+  //             <Card.Title title="Características" />
+  //             <Card.Content>
+  //               <Text> Superficie: {garden.caracteristicas.superficie} </Text>
+  //               <Text> Edad: {garden.caracteristicas.edad}</Text>
+  //               <Text> Variedad: {garden.caracteristicas.variedad}</Text>
+  //               <Text> Ubicación: {garden.caracteristicas.ubicacion}</Text>
+  //               <Text> Densidad: {garden.caracteristicas.densidad}</Text>
+  //               <Text> Tipo de suelo: {garden.caracteristicas.tipo_suelo}</Text>
+  //               <Text> Cobertura de cultivo: {garden.caracteristicas.cobertura}</Text>
+  //             </Card.Content>
+  //           </Card>
 
   useEffect(() => {
     const getData = async () => {
@@ -105,146 +122,141 @@ const GardenDetail = ({ route }: DetallesProps) => {
         </View>
       </View>
 
-      <View style={{ marginTop: 20 }}>
-        {
-          tab === 'features' && (
-            <Card>
-              <Card.Title title="Características" />
-              <Card.Content>
-                <Text> Superficie: {garden.caracteristicas.superficie} </Text>
-                <Text> Edad: {garden.caracteristicas.edad}</Text>
-                <Text> Variedad: {garden.caracteristicas.variedad}</Text>
-                <Text> Ubicación: {garden.caracteristicas.ubicacion}</Text>
-                <Text> Densidad: {garden.caracteristicas.densidad}</Text>
-                <Text> Tipo de suelo: {garden.caracteristicas.tipo_suelo}</Text>
-                <Text> Cobertura de cultivo: {garden.caracteristicas.cobertura}</Text>
-              </Card.Content>
-            </Card>)
-        }
-        {
-          tab === 'suggestions' && (
-            <View style={{ gap: 20 }}>
-              <Card>
-                <Card.Title title="Sugerencias Generales" />
-                <Card.Content>
-                  {
-                    suggestions.map((sug, i) => {
-                      return (
-                        <View key={i}>
-                          <View style={{ flexDirection: 'row', gap: 10 }}>
-                            <Icon source={"check"} size={20}></Icon><Text style={{ flexShrink: 1, textAlign: 'left' }}>{sug}</Text>
-                            <IconButton icon='delete' size={20} iconColor='#ffffff' containerColor='#e80729' style={{ marginLeft: 'auto' }} onPress={() => deleteSuggestion(sug)} />
-                          </View>
-                          <Divider bold style={{ marginVertical: 6 }} />
-                        </View>
-                      )
-                    })
-                  }
-                </Card.Content>
-              </Card>
-              <Button icon='plus' mode='outlined' onPress={() => setSuggestionsModal(true)} style={{ width: 250, marginHorizontal: 'auto' }}>Agregar sugerencias generales</Button>
-            </View>
-          )
-        }
-        {
-          tab === 'nutrition' && (
-            <View style={{ gap: 20 }}>
-              <FlatList
-                horizontal
-                data={[{
-                  labels: ['N', 'P', 'K', 'Ca', 'Mg', 'S', 'B', 'Zn', 'Mn', 'Mo'],
-                  datasets: [
-                    {
-                      data: [
-                        (Math.random() * 100).toFixed(1),
-                        (Math.random() * 100).toFixed(1),
-                        (Math.random() * 100).toFixed(1),
-                        (Math.random() * 100).toFixed(1),
-                        (Math.random() * 100).toFixed(1),
-                        (Math.random() * 100).toFixed(1),
-                        (Math.random() * 100).toFixed(1),
-                        (Math.random() * 100).toFixed(1),
-                        (Math.random() * 100).toFixed(1),
-                        (Math.random() * 100).toFixed(1),
-                      ]
-                    }
-                  ]
-                }]}
-                renderItem={({ item }) => (
-                  <BarChart
-                    yAxisSuffix=''
-                    width={600}
-                    height={220}
-                    data={item}
-                    yAxisLabel='%'
-                    fromZero
-                    showBarTops
-                    showValuesOnTopOfBars
-                    chartConfig={{
-                      backgroundColor: "#e26a00",
-                      backgroundGradientFrom: "#6a1b9a",
-                      backgroundGradientTo: "#4a148c",
-                      decimalPlaces: 2, // optional, defaults to 2dp
-                      color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                      labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                      strokeWidth: 2,
-                      barPercentage: 0.8,
-                      fillShadowGradient: "#8e24aa",
-                      fillShadowGradientOpacity: 1,
-                      style: {
-                        borderRadius: 16
-                      },
-                      propsForDots: {
-                        r: "6",
-                        strokeWidth: "2",
-                        stroke: "#ffa726"
-                      }
-                    }}
-                    style={{
-                      marginVertical: 8,
-                      borderRadius: 16
-                    }}
-                  />
-                )}
-                keyExtractor={(item, index) => index.toString()}
-              >
 
-              </FlatList>
-              <View>
-                <FlatList
-                  data={garden.historial_fertilizante}
-                  renderItem={({ item }) => (
-                    <View style={{ flexDirection: 'row' }}>
-                      <Icon source="chevron-right" color='black' size={20} />
-                      <Text style={{ flexShrink: 1 }}><Text style={{ fontWeight: 'bold' }}>{new Date(item.fecha).toLocaleDateString()}</Text>, se aplicó <Text style={{ fontWeight: 'bold' }}>{item.cantidad}Kg</Text> de la formula {item.formula.map((part, index) => (
-                        <Text key={index} style={{ fontWeight: 'bold' }}>
-                          {part}
-                          {index < item.formula.length - 1 ? '-' : ''}
-                        </Text>
-                      ))} por árbol</Text>
-                    </View>
-                  )}
-                  ListEmptyComponent={<Text variant='labelLarge'>No hay ningnua fertilización</Text>}
-                  ListHeaderComponent={<Text variant='titleMedium'>Fertilizantes</Text>}
+      {
+        tab === 'features' && (
+          <Card style={{ marginTop: 20, paddingVertical: 20 }}>
+            <Card.Title title="Características" />
+            {
+              characteristics.map(item => {
+                return (
+                  <Card.Content key={item.key}>
+                    <Text><Text style={{ fontWeight: '700' }}>{item.key}</Text>: {item.value}</Text>
+                  </Card.Content>
+                )
+              })
+            }
+          </Card>
+        )
+      }
+      {
+        tab === 'suggestions' && (
+          <View style={{ gap: 20 }}>
+            <Card>
+              <Card.Title title="Sugerencias Generales" />
+              <Card.Content>
+                {
+                  suggestions.map((sug, i) => {
+                    return (
+                      <View key={i}>
+                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                          <Icon source={"check"} size={20}></Icon><Text style={{ flexShrink: 1, textAlign: 'left' }}>{sug}</Text>
+                          <IconButton icon='delete' size={20} iconColor='#ffffff' containerColor='#e80729' style={{ marginLeft: 'auto' }} onPress={() => deleteSuggestion(sug)} />
+                        </View>
+                        <Divider bold style={{ marginVertical: 6 }} />
+                      </View>
+                    )
+                  })
+                }
+              </Card.Content>
+            </Card>
+            <Button icon='plus' mode='outlined' onPress={() => setSuggestionsModal(true)} style={{ width: 250, marginHorizontal: 'auto' }}>Agregar sugerencias generales</Button>
+          </View>
+        )
+      }
+      {
+        tab === 'nutrition' && (
+          <View style={{ gap: 20 }}>
+            <FlatList
+              horizontal
+              data={[{
+                labels: ['N', 'P', 'K', 'Ca', 'Mg', 'S', 'B', 'Zn', 'Mn', 'Mo'],
+                datasets: [
+                  {
+                    data: [
+                      (Math.random() * 100).toFixed(1),
+                      (Math.random() * 100).toFixed(1),
+                      (Math.random() * 100).toFixed(1),
+                      (Math.random() * 100).toFixed(1),
+                      (Math.random() * 100).toFixed(1),
+                      (Math.random() * 100).toFixed(1),
+                      (Math.random() * 100).toFixed(1),
+                      (Math.random() * 100).toFixed(1),
+                      (Math.random() * 100).toFixed(1),
+                      (Math.random() * 100).toFixed(1),
+                    ]
+                  }
+                ]
+              }]}
+              renderItem={({ item }) => (
+                <BarChart
+                  yAxisSuffix=''
+                  width={600}
+                  height={220}
+                  data={item}
+                  yAxisLabel='%'
+                  fromZero
+                  showBarTops
+                  showValuesOnTopOfBars
+                  chartConfig={{
+                    backgroundColor: "#e26a00",
+                    backgroundGradientFrom: "#6a1b9a",
+                    backgroundGradientTo: "#4a148c",
+                    decimalPlaces: 2, // optional, defaults to 2dp
+                    color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                    strokeWidth: 2,
+                    barPercentage: 0.8,
+                    fillShadowGradient: "#8e24aa",
+                    fillShadowGradientOpacity: 1,
+                    style: {
+                      borderRadius: 16
+                    },
+                    propsForDots: {
+                      r: "6",
+                      strokeWidth: "2",
+                      stroke: "#ffa726"
+                    }
+                  }}
+                  style={{
+                    marginVertical: 8,
+                    borderRadius: 16
+                  }}
                 />
-                <Text style={{ marginTop: 10 }}>Pendientes de aplicar: <Text>{garden.fertilizaciones_pendientes.map((item, i, arr) => (
-                  <Text key={i}>
-                    {item}
-                    {i < arr.length - 1 ? ',' : ''}
-                  </Text>))}</Text></Text>
-              </View>
-              <Button icon='plus' mode='outlined' onPress={() => setFertilizerModal(true)} style={{ width: 250, marginHorizontal: 'auto', marginTop: 10 }}>Agregar fertilizante</Button>
+              )}
+              keyExtractor={(item, index) => index.toString()}
+            >
+
+            </FlatList>
+            <View>
+              <FlatList
+                data={garden.historial_fertilizante}
+                renderItem={({ item }) => (
+                  <View style={{ flexDirection: 'row' }}>
+                    <Icon source="chevron-right" color='black' size={20} />
+                    <Text style={{ flexShrink: 1 }}><Text style={{ fontWeight: '600' }}>{new Date(item.fecha).toLocaleDateString()}</Text>, se aplicó <Text style={{ fontWeight: '600' }}>{item.cantidad}Kg</Text> de la formula <Text style={{fontWeight: '600'}}>{item.formula}</Text></Text>
+                  </View>
+                )}
+                ListEmptyComponent={<Text variant='labelLarge'>No hay ningnua fertilización</Text>}
+                ListHeaderComponent={<Text style={{marginBottom: 10}} variant='titleMedium'>Fertilizantes</Text>}
+              />
+              <Text style={{ marginTop: 10 }}>Pendientes de aplicar: <Text>{garden.fertilizaciones_pendientes.map((item, i, arr) => (
+                <Text key={i}>
+                  <Text style={{fontWeight: 'bold'}}>{item}</Text>
+                  {i < arr.length - 1 ? ',' : ''}
+                </Text>))}</Text></Text>
             </View>
-          )
-        }
-      </View>
+            <Button icon='plus' mode='outlined' onPress={() => setFertilizerModal(true)} style={{ width: 250, marginHorizontal: 'auto', marginTop: 10 }}>Agregar fertilizante</Button>
+          </View>
+        )
+      }
       {/* ----- Buttons ----- */}
       <View style={{ marginTop: 20 }}>
         {
           user !== null && user.data.rol === 'tecnico' && tab === 'features' && (
-            <View>
+            <View style={{ gap: 20 }}>
               <Button icon='pencil' mode='elevated' onPress={() => setFeaturesModal(true)}>Agregar caracteristicas</Button>
-              <Button icon='pencil' mode='elevated' onPress={() => setFeaturesModal(true)}>Modificar caracteristicas</Button>
+              <Button icon='book-edit' mode='elevated' onPress={() => setFeaturesModalEdit(true)}>Modificar caracteristicas</Button>
             </View>
           )
         }
@@ -263,10 +275,11 @@ const GardenDetail = ({ route }: DetallesProps) => {
       <SuggestionsModal visible={suggestionsModal} setVisible={setSuggestionsModal} garden={garden} />
 
       {/* Features Modal */}
-      <FeaturesModal visible={featuresModal} setVisible={setFeaturesModal} garden={garden}/>
+      <FeaturesModal visible={featuresModal} setVisible={setFeaturesModal} characteristics={characteristics} garden_id={garden.id} />
+      <FeaturesModal visible={featuresModalEdit} setVisible={setFeaturesModalEdit} characteristics={characteristics} garden_id={garden.id} edit />
 
       {/* Fertilizer Modal */}
-      <FertilizerModal visible={fertilizerModal} setVisible={setFertilizerModal} garden={garden}/>
+      <FertilizerModal visible={fertilizerModal} setVisible={setFertilizerModal} garden={garden} />
     </ScrollView>
   )
 }
