@@ -4,6 +4,7 @@ import axios from 'axios'
 import { useNavigation } from '@react-navigation/native'
 import { saveUserData, getUserData, clearUserData } from '../../storage/auth'
 import { AuthProps } from '../../interfaces/user'
+import Toast from 'react-native-toast-message'
 
 const Login = () => {
     const [email, setEmail] = useState('')
@@ -74,8 +75,18 @@ const Login = () => {
                 response.data.data.rol === 'cliente' ? navigation.navigate('ClientLayout') : navigation.navigate('TecnicLayout')
                 await saveUserData(response.data)
             }
-        } catch (error) {
-            console.error('Error al iniciar sesion', error)
+        } catch (error: any) {
+            if (error.response && error.response.status === 404) {
+                Toast.show({
+                    type: "error",
+                    text1: 'Error al iniciar sesión',
+                    text2: 'Usuario y/o contraseña incorrecta',
+                    text1Style: { fontSize: 18 },
+                    text2Style: { fontSize: 15 },
+                })
+            } else {
+                console.error('Error al iniciar sesión:', error)
+            }
         } finally {
             setLoading(false)
         }
@@ -93,6 +104,7 @@ const Login = () => {
                         </>
                 }
             </KeyboardAvoidingView>
+            <Toast position='bottom'/>
         </View>
     )
 }
