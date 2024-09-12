@@ -1,42 +1,76 @@
 import React, { useEffect, useState } from 'react'
-import { View, Image, Pressable, StyleSheet, FlatList } from 'react-native'
-import { Text, Button } from 'react-native-paper'
+import { View, Pressable, StyleSheet, FlatList, ActivityIndicator } from 'react-native'
+import { Text, Button, DataTable, Searchbar } from 'react-native-paper'
 import { clearUserData, getUserData } from '../../../storage/auth';
-import { AuthProps, ClientProps } from '../../../interfaces/user';
+import { AuthProps, CalendarProps, ClientProps } from '../../../interfaces/user';
 import axios from 'axios'
+import StateGardenModal from '../../../components/StateGardenModal';
+import StatesCalendar from '../../../components/StatesCalendar';
+import debounce from 'debounce';
 
 type HomeState = 'profile' | 'producers'
 
-const Home = ({ navigation }) => {
+
+const Home = ({ navigation }: { navigation: any }) => {
     const [tab, setTab] = useState<HomeState>('profile')
     const [user, setUser] = useState<null | AuthProps>(null)
     const [loading, setLoading] = useState(false)
+
     const [clients, setClients] = useState<ClientProps[]>([])
+    const [calendar, setCalendar] = useState<CalendarProps[]>([])
+    const [newClients, setNewClients] = useState<ClientProps[]>([])
+    const [newCalendar, setNewCalendar] = useState<CalendarProps[]>([])
+    const [stateModal, setStateModal] = useState(false)
 
-    const getClients = async (data: AuthProps) => {
+    const [page, setPage] = useState<number>(0);
+    const [numberOfItemsPerPageList] = useState([5, 10, 25]);
+    const [itemsPerPage, onItemsPerPageChange] = useState(
+        numberOfItemsPerPageList[0]
+    );
 
-        try {
-            setLoading(true)
-            const response = await axios.get(`http://192.168.0.18:3000/tech/clients/${data.uid}`)
-            if (response.status === 200) {
+    const [searchQuery, setSearchQuery] = useState('');
 
-                setClients(response.data)
-            }
-        } catch (error) {
-            console.error('Error al obtener clientes', error)
-        } finally {
-            setLoading(false)
-        }
+
+    const getClients = async (uid: string) => {
+        return await axios.get(`http://192.168.0.18:3000/tech/clients/${uid}`)
+    }
+
+    const getCalendar = async (uid: string) => {
+        return await axios.get(`http://192.168.0.18:3000/tech/calendario/${uid}`)
     }
 
     useEffect(() => {
+        setLoading(false)
         const getData = async () => {
-            const data = await getUserData();
-            setUser(data)
-            getClients(data)
-        }
+            try {
+                let data: AuthProps = await getUserData();
 
-        getData()
+                if (!data) {
+                    data = await getUserData()
+
+                }
+
+                if (data) {
+                    setUser(data);
+
+                    const [clientResponse, calendarResponse] = await Promise.all([
+                        getClients(data.uid),
+                        getCalendar(data.uid)
+                    ])
+
+                    if (clientResponse.status === 200) setClients(clientResponse.data)
+                    if (calendarResponse.status === 200) setCalendar(calendarResponse.data)
+                } else {
+                    console.error('No se pudieron obtener los datos del usuario')
+                }
+            } catch (error) {
+                console.error('Error al obtener los datos del usuario', error);
+            } finally {
+                setLoading(false)
+            }
+        };
+
+        getData();
     }, [])
 
     const logout = async () => {
@@ -45,9 +79,29 @@ const Home = ({ navigation }) => {
     };
 
     const handlePress = (client: ClientProps) => {
-        console.log('datos que se mandan', client)
         navigation.navigate('Huertos del cliente', { client });
     };
+
+
+    // const from = page * itemsPerPage;
+    // const to = Math.min((page + 1) * itemsPerPage, dataDB.length);
+
+    useEffect(() => {
+        if (searchQuery.trim() === '') {
+            console.log(clients)
+            setNewClients(clients)
+            setNewCalendar(calendar)
+        } else {
+            debounce(filterData, 400)
+        }
+    }, [searchQuery, clients, calendar])
+
+    const filterData = () => {
+        const newCalendar2 = calendar.filter(client => client.name === searchQuery)
+        const newClients2 = clients.filter(client => client.nombre === searchQuery)
+        setNewCalendar(newCalendar2)
+        setNewClients(newClients2)
+    }
 
     return (
         <View style={{ flex: 1, padding: 20 }}>
@@ -67,10 +121,10 @@ const Home = ({ navigation }) => {
             </View>
             {
                 tab === 'producers' && (<FlatList
-                style={styles.clientsContainer}
+                    style={styles.clientsContainer}
                     data={clients}
                     keyExtractor={client => client.id}
-                    renderItem={({item}) => {
+                    renderItem={({ item }) => {
                         return (
                             <Pressable
                                 onPress={() => {
@@ -91,11 +145,44 @@ const Home = ({ navigation }) => {
             }
             {
                 tab === 'profile' && (
-                    <View>
-                        
+                    <View >
+
+                        <View style={{ flexDirection: 'row', gap: 20, flexWrap: 'wrap', marginVertical: 20 }}>
+                            <View style={styles.meaningfulMarks}>
+                                <View style={{ width: 20, height: 20, backgroundColor: '#009929', borderRadius: 6 }}></View>
+                                <Text>Todo bien</Text>
+                            </View>
+                            <View style={styles.meaningfulMarks}>
+                                <View style={{ width: 20, height: 20, backgroundColor: '#ebed17', borderRadius: 6 }}></View>
+                                <Text>Precaución</Text>
+                            </View>
+                            <View style={styles.meaningfulMarks}>
+                                <View style={{ width: 20, height: 20, backgroundColor: '#efa229', borderRadius: 6 }}></View>
+                                <Text>Cuidado con plagas</Text>
+                            </View>
+                            <View style={styles.meaningfulMarks}>
+                                <View style={{ width: 20, height: 20, backgroundColor: '#e80729', borderRadius: 6 }}></View>
+                                <Text>Mal estado</Text>
+                            </View>
+                        </View>
+                        {
+                            loading ? <ActivityIndicator /> : (
+                                <View>
+                                    <Searchbar
+                                        placeholder="Search"
+                                        onChangeText={setSearchQuery}
+                                        value={searchQuery}
+                                        style={{ marginBottom: 20 }}
+                                    />
+                                    <StatesCalendar calendar={newCalendar} clients={newClients} />
+                                </View>
+                            )
+                        }
                     </View>
                 )
             }
+            {/* modal for seeing garden state */}
+            <StateGardenModal visible={stateModal} setVisible={setStateModal} />
         </View>
     )
 }
@@ -125,6 +212,24 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         marginHorizontal: 'auto'
     },
+    cellswidth: {
+        width: 120,
+        justifyContent: 'center',
+    },
+    stateColorDimensions: {
+        width: 26,
+        height: 26
+    },
+    textTitles: {
+        borderStyle: 'solid',
+        borderColor: 'red',
+        flex: 1
+    },
+    meaningfulMarks: {
+        flexDirection: 'row',
+        gap: 8,
+    }
 })
 
 export default Home
+
