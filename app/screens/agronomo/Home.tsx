@@ -87,18 +87,30 @@ const Home = ({ navigation }: { navigation: any }) => {
     // const to = Math.min((page + 1) * itemsPerPage, dataDB.length);
 
     useEffect(() => {
-        if (searchQuery.trim() === '') {
-            console.log(clients)
-            setNewClients(clients)
-            setNewCalendar(calendar)
-        } else {
-            debounce(filterData, 400)
+        console.log(searchQuery)
+        const handleSearch = () => {
+            if (searchQuery.trim() === '') {
+                console.log('vacio')
+                setNewClients(clients)
+                setNewCalendar(calendar)
+            } else {
+                filterData()
+            }
+        }
+
+        const debounceFilter = debounce(handleSearch,200)
+        debounceFilter()
+
+        return () => {
+            debounceFilter.clear()
         }
     }, [searchQuery, clients, calendar])
 
+    
+
     const filterData = () => {
-        const newCalendar2 = calendar.filter(client => client.name === searchQuery)
-        const newClients2 = clients.filter(client => client.nombre === searchQuery)
+        const newCalendar2 = calendar.filter(client => client.name.toUpperCase().includes(searchQuery.toLocaleUpperCase()))
+        const newClients2 = clients.filter(client => client.nombre.toUpperCase().includes(searchQuery.toUpperCase()))
         setNewCalendar(newCalendar2)
         setNewClients(newClients2)
     }
