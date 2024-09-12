@@ -25,8 +25,8 @@ const Login = () => {
                 },
             });
             return response.status === 200;
-        } catch (error) {
-            console.error('Error al verificar el token', error);
+        } catch (error: any) {
+            if (error.response && error.response.status === 404) console.error('Error al verificar el token', error);
             return false;
         }
     };
