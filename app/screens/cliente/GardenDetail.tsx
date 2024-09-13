@@ -131,7 +131,7 @@ const GardenDetail = ({ route }: DetallesProps) => {
               characteristics.map(item => {
                 return (
                   <Card.Content key={item.key}>
-                    <Text><Text style={{ fontWeight: '700' }}>{item.key}</Text>: {item.value}</Text>
+                    <Text style={{fontSize: 15}}><Text style={{ fontWeight: '700', textTransform: 'capitalize' }}>{item.key}</Text>: {item.value}</Text>
                   </Card.Content>
                 )
               })
