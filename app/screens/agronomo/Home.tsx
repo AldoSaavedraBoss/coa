@@ -7,6 +7,7 @@ import axios from 'axios'
 import StateGardenModal from '../../../components/StateGardenModal';
 import StatesCalendar from '../../../components/StatesCalendar';
 import debounce from 'debounce';
+import NewClientModal from '../../../components/NewClientModal';
 
 type HomeState = 'profile' | 'producers'
 
@@ -21,14 +22,13 @@ const Home = ({ navigation }: { navigation: any }) => {
     const [newClients, setNewClients] = useState<ClientProps[]>([])
     const [newCalendar, setNewCalendar] = useState<CalendarProps[]>([])
     const [stateModal, setStateModal] = useState(false)
-
-    const [page, setPage] = useState<number>(0);
-    const [numberOfItemsPerPageList] = useState([5, 10, 25]);
-    const [itemsPerPage, onItemsPerPageChange] = useState(
-        numberOfItemsPerPageList[0]
-    );
+    const [newClientModal, setNewClientModal] = useState(false)
+;
+    // const [lastVisible, setLastVisible] = useState(null);
+    // const [total, setTotal] = useState(0)
 
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchQueryList, setSearchQueryList] = useState('');
 
 
     const getClients = async (uid: string) => {
@@ -98,7 +98,7 @@ const Home = ({ navigation }: { navigation: any }) => {
             }
         }
 
-        const debounceFilter = debounce(handleSearch,200)
+        const debounceFilter = debounce(handleSearch, 200)
         debounceFilter()
 
         return () => {
@@ -106,13 +106,17 @@ const Home = ({ navigation }: { navigation: any }) => {
         }
     }, [searchQuery, clients, calendar])
 
-    
+
 
     const filterData = () => {
         const newCalendar2 = calendar.filter(client => client.name.toUpperCase().includes(searchQuery.toLocaleUpperCase()))
         const newClients2 = clients.filter(client => client.nombre.toUpperCase().includes(searchQuery.toUpperCase()))
         setNewCalendar(newCalendar2)
         setNewClients(newClients2)
+    }
+
+    const getNewClient = (client: ClientProps) => {
+        setClients(prev => [...prev].concat(client))
     }
 
     return (
@@ -131,35 +135,46 @@ const Home = ({ navigation }: { navigation: any }) => {
                 <Button mode={tab === 'profile' ? 'contained' : 'outlined'} onPress={() => setTab('profile')} style={{ width: 150 }}>Mi perfil</Button>
                 <Button mode={tab === 'producers' ? 'contained' : 'outlined'} onPress={() => setTab('producers')} style={{ width: 150 }}>Productores</Button>
             </View>
+            <Searchbar
+                placeholder="Search"
+                onChangeText={setSearchQuery}
+                value={searchQuery}
+                style={{ marginTop: 20 }}
+            />
             {
-                tab === 'producers' && (<FlatList
-                    style={styles.clientsContainer}
-                    data={clients}
-                    keyExtractor={client => client.id}
-                    renderItem={({ item }) => {
-                        return (
-                            <Pressable
-                                onPress={() => {
-                                    handlePress(item)
-                                }}
-                                style={({ pressed }) => [
-                                    {
-                                        backgroundColor: pressed ? '#005510' : '#009929'
-                                    },
-                                    styles.clientButton
-                                ]}>
-                                <Text style={styles.textClient}>{item.nombre}</Text>
-                            </Pressable>
-                        )
-                    }}>
+                tab === 'producers' && (
+                    <View style={{ flex: 1 }}>
+                        <FlatList
+                            style={styles.clientsContainer}
+                            data={newClients}
+                            showsVerticalScrollIndicator={false}
+                            keyExtractor={client => client.id}
+                            renderItem={({ item }) => {
+                                return (
+                                    <Pressable
+                                        onPress={() => {
+                                            handlePress(item)
+                                        }}
+                                        style={({ pressed }) => [
+                                            {
+                                                backgroundColor: pressed ? '#005510' : '#009929'
+                                            },
+                                            styles.clientButton
+                                        ]}>
+                                        <Text style={styles.textClient}>{item.nombre}</Text>
+                                    </Pressable>
+                                )
+                            }}>
 
-                </FlatList>)
+                        </FlatList>
+                        <Button mode='outlined' onPress={() => setNewClientModal(true)} style={{ width: 230, marginHorizontal: 'auto' }}>Agregar un nuevo usuario</Button>
+                    </View>
+                )
             }
             {
                 tab === 'profile' && (
-                    <View >
-
-                        <View style={{ flexDirection: 'row', gap: 20, flexWrap: 'wrap', marginVertical: 20 }}>
+                    <View>
+                        <View style={{ flexDirection: 'row', gap: 20, flexWrap: 'wrap', marginVertical: 20, justifyContent: 'center' }}>
                             <View style={styles.meaningfulMarks}>
                                 <View style={{ width: 20, height: 20, backgroundColor: '#009929', borderRadius: 6 }}></View>
                                 <Text>Todo bien</Text>
@@ -179,22 +194,16 @@ const Home = ({ navigation }: { navigation: any }) => {
                         </View>
                         {
                             loading ? <ActivityIndicator /> : (
-                                <View>
-                                    <Searchbar
-                                        placeholder="Search"
-                                        onChangeText={setSearchQuery}
-                                        value={searchQuery}
-                                        style={{ marginBottom: 20 }}
-                                    />
-                                    <StatesCalendar calendar={newCalendar} clients={newClients} />
-                                </View>
+                                <StatesCalendar calendar={newCalendar} clients={newClients}/>
                             )
                         }
                     </View>
                 )
             }
-            {/* modal for seeing garden state */}
+            {/* modal for looking garden state */}
             <StateGardenModal visible={stateModal} setVisible={setStateModal} />
+            {/* Modal for loking new client modal */}
+            <NewClientModal visible={newClientModal} setVisible={setNewClientModal} techId={user?.uid} getNewClient={getNewClient} />
         </View>
     )
 }
@@ -204,7 +213,7 @@ const styles = StyleSheet.create({
         flexDirection: 'column',
         gap: 20,
         marginHorizontal: 'auto',
-        marginTop: 40
+        marginTop: 20
     },
     clientButton: {
         paddingVertical: 10,

@@ -73,8 +73,8 @@ export interface PestsDiseasesProps {
   product: string
 }
 
-
 export interface CalendarProps {
   name: string,
-  meses: [null[] | string[]]
+  meses: [null[] | {estado: string, atributos: string[]}[]],
+
 }
