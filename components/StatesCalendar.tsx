@@ -1,63 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, ScrollView, FlatList, Pressable, StyleSheet } from 'react-native';
-import { DataTable, Text } from 'react-native-paper';
-import { CalendarProps, ClientProps } from '../interfaces/user';
-import { Dropdown } from 'react-native-element-dropdown';
-
-const weeksNonLeapYear = {
-  enero: ['1', '8', '15', '22', '29'],
-  febrero: ['5', '12', '19', '26'],
-  marzo: ['5', '12', '19', '26'],
-  abril: ['2', '9', '16', '23', '30'],
-  mayo: ['7', '14', '21', '28'],
-  junio: ['4', '11', '18', '25'],
-  julio: ['2', '9', '16', '23', '30'],
-  agosto: ['6', '13', '20', '27'],
-  septiembre: ['3', '10', '17', '24'],
-  octubre: ['1', '8', '15', '22', '29'],
-  noviembre: ['5', '12', '19', '26'],
-  diciembre: ['3', '10', '17', '24', '31'],
-};
-
-const weeksLeapYear = {
-  enero: ['1', '8', '15', '22', '29'],
-  febrero: ['5', '12', '19', '26'],
-  marzo: ['4', '11', '18', '25'],
-  abril: ['1', '8', '15', '22', '29'],
-  mayo: ['6', '13', '20', '27'],
-  junio: ['3', '10', '17', '24'],
-  julio: ['1', '8', '15', '22', '29'],
-  agosto: ['5', '12', '19', '26'],
-  septiembre: ['2', '9', '16', '23', '30'],
-  octubre: ['7', '14', '21', '28'],
-  noviembre: ['4', '11', '18', '25'],
-  diciembre: ['2', '9', '16', '23', '30'],
-};
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { DataTable, Text, Tooltip } from 'react-native-paper';
+import { CalendarProps, ClientProps, DatesData, Meses } from '../interfaces/user';
+import { weeksLeapYear, weeksNonLeapYear } from '../lib/yearTypes';
+import {weeksLeapYearStartToEnd, weeksNonLeapYearStartToEnd} from '../lib/calendar'
 
 interface StateCalendarProps {
   calendar: CalendarProps[]
   clients: ClientProps[],
+  dates: DatesData[]
 }
 
-type Estado = 'todo bien' | 'precaución' | 'cuidado con plagas' | 'mal estado';
-
-interface Meses {
-  enero: Estado[];
-  febrero: Estado[];
-  marzo: Estado[];
-  abril: Estado[];
-  mayo: Estado[];
-  junio: Estado[];
-  julio: Estado[];
-  agosto: Estado[];
-  septiembre: Estado[];
-  octubre: Estado[];
-  noviembre: Estado[];
-  diciembre: Estado[];
-}
-
-const StatesCalendar = ({ calendar, clients }: StateCalendarProps) => {
-  const [numberOfItemsPerPageList] = useState([1, 5, 10, 25]);
+const StatesCalendar = ({ calendar, clients, dates }: StateCalendarProps) => {
+  const [numberOfItemsPerPageList] = useState([5, 10, 25]);
   const [itemsPerPage, setItemsPerPage] = useState(
     numberOfItemsPerPageList[0]
   );
@@ -80,6 +35,7 @@ const StatesCalendar = ({ calendar, clients }: StateCalendarProps) => {
   const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
   const yearselected = new Date().getFullYear() % 4 === 0 ? weeksLeapYear : weeksNonLeapYear;
+  const rangeDates = new Date().getFullYear() % 4 === 0 ? weeksLeapYearStartToEnd : weeksNonLeapYearStartToEnd;
   const stateToColor = (state: string | undefined) => {
     let bgColor = ''
     let complementaryBgColor = ''
@@ -115,13 +71,14 @@ const StatesCalendar = ({ calendar, clients }: StateCalendarProps) => {
   return (
     <View>
       <View style={{ flexDirection: 'row', backgroundColor: '#eee' }}>
-        <View style={{ width: leftColumnWidth, backgroundColor: 'yellow', borderWidth: 1, borderColor }}>
+        <View style={{ width: leftColumnWidth }}>
           <View
             style={{
               height: headerHeight,
               backgroundColor: primaryColor,
               borderBottomWidth: 1,
               borderBottomColor: borderColor,
+              borderTopLeftRadius: 10
             }}
           ></View>
           {/* left column */}
@@ -135,10 +92,10 @@ const StatesCalendar = ({ calendar, clients }: StateCalendarProps) => {
           </ScrollView>
         </View>
         {/* right column */}
-        <View style={{ backgroundColor: 'white', flex: 1 }}>
+        <View style={{ backgroundColor: 'white', flex: 1, borderTopRightRadius: 10, overflow: 'hidden' }}>
           <ScrollView horizontal bounces>
             <View>
-              <View style={{ borderWidth: 1, borderColor, borderStyle: 'solid', flexDirection: 'row' }}>
+              <View style={{ flexDirection: 'row' }}>
                 {
                   months.map((month, index) => (
                     <View key={index} style={{ height: 40, backgroundColor: primaryColor, width: 150, borderColor: '#fff', borderStyle: 'solid', borderLeftWidth: 1, borderRightWidth: 1 }}>
@@ -173,26 +130,50 @@ const StatesCalendar = ({ calendar, clients }: StateCalendarProps) => {
                   leftRef.current?.scrollTo({ y, animated: false })
                 }}
               >
-                <View style={{ borderWidth: 1, borderColor, borderStyle: 'solid', }}>
+                <View style={{}}>
                   {calendar.slice(from, to).map((client, index) => {
                     let weekCounter = 0
                     return (
                       <View key={index} style={[{ height: 28, backgroundColor: '#fff', width: 150, borderColor: '#fff', borderStyle: 'solid', borderLeftWidth: 1, borderRightWidth: 1, flexDirection: 'row' }, index % 2 ? { backgroundColor: '#fff' } : { backgroundColor }]}>
                         {
-                          months.map((month, monthIndex) => {
+                          months.map((month, monthIndex, arr) => {
 
                             return (
-                              <View key={monthIndex} style={{ flexDirection: 'row', width: 150 }}>
+                              <View key={monthIndex} style={[{ flexDirection: 'row', width: 150, borderColor: '#fff' }, monthIndex === 0 && { borderLeftWidth: 2 }, monthIndex !== 0 && { borderLeftWidth: 2, borderRightWidth: 2 }]}>
                                 {
                                   client.meses[monthIndex].map((state, weekIndex) => {
                                     // Definir colores según el estado
-                                    const { bgColor, complementaryBgColor } = stateToColor(state?.estado)
-                                    weekCounter++
+                                    const { bgColor, complementaryBgColor } = stateToColor(state?.estado);
+                                    weekCounter++;
 
+                                    // Obtener el rango de la semana
+                                    const weekRange = rangeDates[month][weekIndex];
+
+                                    // Verificar si alguna cita coincide con la semana actual
+                                    const cita = dates.find(date => {
+                                      const citaDate = new Date(date.date);
+                                      return new Date(citaDate) >= new Date(weekRange.start) && citaDate <= new Date(weekRange.end) && date.clientId === client.id
+                                    });
+                                    
                                     return (
                                       <View key={weekIndex} style={{ height: 28, flex: 1, backgroundColor: bgColor, borderWidth: 1, borderColor: '#e7e7e7', borderRadius: 5 }}>
                                         {
-                                          bgColor !== '#fff' && <Text style={{ textAlign: 'center', color: complementaryBgColor }}>{state?.atributos.join('')}</Text>
+                                          cita ? (
+                                            // Renderizar el círculo blanco si hay una cita
+                                            <View style={{ justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                                              <Tooltip title={`Fecha: ${new Date(cita.date).toLocaleString('es-MX')}`}>
+                                              <View style={{
+                                                width: 16,
+                                                height: 16,
+                                                borderRadius: 8,
+                                                backgroundColor: '#000'
+                                              }} />
+                                              </Tooltip>
+                                            </View>
+                                          ) : (
+                                            // Renderizar los atributos si no hay una cita
+                                            bgColor !== '#fff' && <Text style={{ textAlign: 'center', color: complementaryBgColor }}>{state?.atributos.join('')}</Text>
+                                          )
                                         }
                                       </View>
                                     );
@@ -223,7 +204,7 @@ const StatesCalendar = ({ calendar, clients }: StateCalendarProps) => {
         onItemsPerPageChange={setItemsPerPage}
         showFastPaginationControls
         selectPageDropdownLabel={'Filas por página'}
-        style={{ backgroundColor: '#fff', justifyContent: 'center', padding: 0 }}
+        style={{ backgroundColor: '#fff', justifyContent: 'center', padding: 0, borderBottomLeftRadius: 10, borderBottomRightRadius: 10, marginBottom: 10, height: 100 }}
       />
       {/* <View style={{flexDirection: 'row'}}>
         <Text>Filas por página</Text>

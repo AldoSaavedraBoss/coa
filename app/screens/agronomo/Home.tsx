@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react'
-import { View, Pressable, StyleSheet, FlatList, ActivityIndicator } from 'react-native'
+import { View, Pressable, StyleSheet, FlatList, ActivityIndicator, ScrollView } from 'react-native'
 import { Text, Button, DataTable, Searchbar } from 'react-native-paper'
 import { clearUserData, getUserData } from '../../../storage/auth';
-import { AuthProps, CalendarProps, ClientProps } from '../../../interfaces/user';
+import { AuthProps, CalendarProps, ClientProps, DatesData } from '../../../interfaces/user';
 import axios from 'axios'
-import StateGardenModal from '../../../components/StateGardenModal';
+// import StateGardenModal from '../../../components/StateGardenModal';
 import StatesCalendar from '../../../components/StatesCalendar';
 import debounce from 'debounce';
 import NewClientModal from '../../../components/NewClientModal';
+import Toast, { ToastData } from 'react-native-toast-message';
+import DatesModal from '../../../components/DatesModal';
+import RegisterStateModal from '../../../components/RegisterStateModal';
 
 type HomeState = 'profile' | 'producers'
 
@@ -19,10 +22,12 @@ const Home = ({ navigation }: { navigation: any }) => {
 
     const [clients, setClients] = useState<ClientProps[]>([])
     const [calendar, setCalendar] = useState<CalendarProps[]>([])
+    const [dates, setDates] = useState<DatesData[]>([])
     const [newClients, setNewClients] = useState<ClientProps[]>([])
     const [newCalendar, setNewCalendar] = useState<CalendarProps[]>([])
-    const [stateModal, setStateModal] = useState(false)
+    const [showDatesModal, setShowDatesModal] = useState(false)
     const [newClientModal, setNewClientModal] = useState(false)
+    const [registerStateModal, setRegisterStateModal] = useState(false)
 ;
     // const [lastVisible, setLastVisible] = useState(null);
     // const [total, setTotal] = useState(0)
@@ -39,6 +44,14 @@ const Home = ({ navigation }: { navigation: any }) => {
         return await axios.get(`http://192.168.0.18:3000/tech/calendario/${uid}`)
     }
 
+    const getDates = async (uid: string) => {
+        return await axios.get(`http://192.168.0.18:3000/tech/citas`, {
+            params: {
+                tecnico: uid
+            }
+        })
+    }
+
     useEffect(() => {
         setLoading(false)
         const getData = async () => {
@@ -53,13 +66,15 @@ const Home = ({ navigation }: { navigation: any }) => {
                 if (data) {
                     setUser(data);
 
-                    const [clientResponse, calendarResponse] = await Promise.all([
+                    const [clientResponse, calendarResponse, datesResponse] = await Promise.all([
                         getClients(data.uid),
-                        getCalendar(data.uid)
+                        getCalendar(data.uid),
+                        getDates(data.uid)
                     ])
 
                     if (clientResponse.status === 200) setClients(clientResponse.data)
                     if (calendarResponse.status === 200) setCalendar(calendarResponse.data)
+                    if (datesResponse.status === 200) setDates(datesResponse.data)
                 } else {
                     console.error('No se pudieron obtener los datos del usuario')
                 }
@@ -119,11 +134,21 @@ const Home = ({ navigation }: { navigation: any }) => {
         setClients(prev => [...prev].concat(client))
     }
 
+    const getToastData = (obj: ToastData) => {
+        Toast.show({
+            type: obj.type,
+            text1: obj.text1,
+            text2: obj.text2,
+            text1Style: obj.text1Style,
+            text2Style: obj.text2Style,
+        })
+    }
+
     return (
-        <View style={{ flex: 1, padding: 20 }}>
+        <ScrollView style={{ flex: 1, padding: 20 }} showsVerticalScrollIndicator={false}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 {/* <Image source={{ uri: 'https://picsum.photos/200/300' }} /> */}
-                <Text variant='labelLarge' style={{ fontSize: 18 }}>{new Date().toLocaleDateString(undefined, {
+                <Text variant='labelLarge' style={{ fontSize: 18 }}>{new Date().toLocaleDateString('es-MX', {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',
@@ -194,17 +219,30 @@ const Home = ({ navigation }: { navigation: any }) => {
                         </View>
                         {
                             loading ? <ActivityIndicator /> : (
-                                <StatesCalendar calendar={newCalendar} clients={newClients}/>
+                                <StatesCalendar calendar={newCalendar} clients={newClients} dates={dates}/>
                             )
                         }
+                        {/* <Dates clients={clients}/> */}
+
+                        <View style={{ gap: 16, marginTop: 'auto' }}>
+                                <Button mode='outlined' onPress={() => setRegisterStateModal(true)} style={{ maxWidth: 260, marginHorizontal: 'auto' }}>Registrar estado de los huertos</Button>
+                                <Button
+                                    mode='outlined'
+                                    onPress={() => setShowDatesModal(true)}
+                                    style={{ maxWidth: 260, marginHorizontal: 'auto' }}
+                                >Agendar cita
+                                </Button>
+                            </View>
                     </View>
                 )
             }
             {/* modal for looking garden state */}
-            <StateGardenModal visible={stateModal} setVisible={setStateModal} />
+            <RegisterStateModal visible={registerStateModal} setVisible={setRegisterStateModal} clients={clients} getToastData={getToastData} />
             {/* Modal for loking new client modal */}
             <NewClientModal visible={newClientModal} setVisible={setNewClientModal} techId={user?.uid} getNewClient={getNewClient} />
-        </View>
+            <DatesModal visible={showDatesModal} setVisible={setShowDatesModal} clients={clients} getToastData={getToastData} tecnico_id={user?.uid || ''}/>
+            <Toast position='bottom'/>
+        </ScrollView>
     )
 }
 

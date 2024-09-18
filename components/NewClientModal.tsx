@@ -48,6 +48,19 @@ const NewClientModal = ({ visible, setVisible, techId, getNewClient }: NewClient
             })
             return
         }
+
+        const isEmail = handleEmailChange
+
+        if(!isEmail){
+            Toast.show({
+                type: "error",
+                text1: 'Error',
+                text2: 'Email no valido',
+                text1Style: { fontSize: 18 },
+                text2Style: { fontSize: 15 }
+            })
+            return
+        }
         
         try {
             const response = await axios.post('http://192.168.0.18:3000/tech/register/client/', {
@@ -80,6 +93,13 @@ const NewClientModal = ({ visible, setVisible, techId, getNewClient }: NewClient
         }
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const handleEmailChange = (value: string) => {
+    return emailRegex.test(value) 
+    
+  };
+
     const onClose = () => {
         setEmail('')
         setLastname('')
@@ -110,6 +130,8 @@ const NewClientModal = ({ visible, setVisible, techId, getNewClient }: NewClient
                 <TextInput
                     label='email'
                     value={email}
+                    keyboardType='email-address'
+                    autoCapitalize='none'
                     onChangeText={text => setEmail(text)}
                 />
 

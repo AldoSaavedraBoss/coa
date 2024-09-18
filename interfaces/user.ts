@@ -17,18 +17,26 @@ export type GardenFeatures = {
   [key: string]: any
 }
 
+export interface FertilizerData {
+  cantidad: number
+  fecha: string
+  formula: string[]
+}
+
+export interface GardenStates {
+  estado: string
+  fecha: string
+}
+
 export interface GardenProps {
-  caracteristicas:GardenFeatures
+  caracteristicas: GardenFeatures
   cliente_id: string
   id: string
   nombre: string
   recomendaciones: string[]
   fertilizaciones_pendientes: string[]
-  historial_fertilizante: {
-    cantidad: number
-    fecha: string
-    formula: string[]
-  }[]
+  historial_fertilizante: FertilizerData[]
+  historial_estados: GardenStates[]
 }
 
 export interface ClientProps {
@@ -74,7 +82,41 @@ export interface PestsDiseasesProps {
 }
 
 export interface CalendarProps {
-  name: string,
-  meses: [null[] | {estado: string, atributos: string[]}[]],
+  id: string
+  name: string
+  meses: [null[] | { estado: string; atributos: string[] }[]]
+}
 
+export interface ToastData {
+  type: 'error' | 'info' | 'success'
+  text1: string
+  text2: string
+  text1Style: any
+  text2Style: any
+}
+
+type Estado = 'todo bien' | 'precaución' | 'cuidado con plagas' | 'mal estado'
+
+export interface Meses {
+  enero: Estado[]
+  febrero: Estado[]
+  marzo: Estado[]
+  abril: Estado[]
+  mayo: Estado[]
+  junio: Estado[]
+  julio: Estado[]
+  agosto: Estado[]
+  septiembre: Estado[]
+  octubre: Estado[]
+  noviembre: Estado[]
+  diciembre: Estado[]
+}
+
+export interface DatesData {
+  id: string
+  clientId: string
+  date: string
+  gardenId: string
+  name: string
+  apellidos: string
 }
