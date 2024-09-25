@@ -6,7 +6,8 @@ import { Dropdown } from "react-native-element-dropdown";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
-import NetInfo from '@react-native-community/netinfo';
+import { useSQLiteContext } from 'expo-sqlite';
+import { v4 as uuidv4 } from 'uuid';
 
 interface DatesModalProps {
     visible: boolean,
@@ -17,6 +18,8 @@ interface DatesModalProps {
 }
 
 const DatesModal = ({ visible, setVisible, clients, getToastData, tecnico_id }: DatesModalProps) => {
+    const db = useSQLiteContext()
+
     const [form, setForm] = useState({
         clientId: '',
         lastname: '',
@@ -62,6 +65,7 @@ const DatesModal = ({ visible, setVisible, clients, getToastData, tecnico_id }: 
             name: '',
             tecnicoId: ''
         })
+        setGardens([])
         setVisible(false)
     }
 
@@ -69,19 +73,41 @@ const DatesModal = ({ visible, setVisible, clients, getToastData, tecnico_id }: 
         const getGardens = async () => {
             if (form.clientId === '') return
             try {
-                const response = await axios.get(`http://192.168.0.18:3000/gardens/${form.clientId}`)
+                const result: GardenProps[] = await db.getAllAsync('SELECT * FROM huertos WHERE cliente_id = ?', form.clientId)
 
-                if (response.status === 200) setGardens(response.data)
+                if (result.length > 0) {
+                    const aux: GardenProps[] = result.map(garden => ({
+                        ...garden,
+                        caracteristicas: JSON.parse(garden.caracteristicas),
+                        fertilizaciones_pendientes: JSON.parse(garden.fertilizaciones_pendientes),
+                        historial_estados: JSON.parse(garden.historial_estados),
+                        historial_fertilizantes: JSON.parse(garden.historial_fertilizantes),
+                        recomendaciones: JSON.parse(garden.recomendaciones)
+                    }))
+                    setGardens(aux)
+                }
             } catch (error) {
-
+                console.error(error)
             }
         }
 
-        getGardens()
+        //     try {
+        //         const response = await axios.get(`http://192.168.0.18:3000/gardens/${form.clientId}`)
+
+        //         if (response.status === 200) setGardens(response.data)
+        //     } catch (error) {
+
+        //     }
+        // }
+
+        // Ejecutar la función solo si hay un clientId
+        if (form.clientId) {
+            getGardens()
+        }
     }, [form.clientId])
 
     const bookingDate = async () => {
-        console.log(form.tecnicoId)
+    console.log(form.clientId, form.date, form.gardenId, form.tecnicoId)
         if (!form.clientId || !form.date || !form.gardenId || !form.tecnicoId) {
             Toast.show({
                 text1: 'Algo falta',
@@ -100,40 +126,53 @@ const DatesModal = ({ visible, setVisible, clients, getToastData, tecnico_id }: 
             name: form.name,
             tecnicoId: form.tecnicoId
         }
-        const state = await NetInfo.fetch()
-        if (state.isConnected) {
-            try {
-                
-                console.log('No hay conexión. La cita se ha guardado localmente.');
-            } catch (error) {
-                console.error('no se guardo en sqlite', error)
-            }
-        } else {
-            try {
-                const response = await axios.post('http://192.168.0.18:3000/tech/citas', newDate)
-
-                if (response.status === 201) {
-                    getToastData({
-                        text1: 'OK',
-                        text2: 'La cita se ha agendado con exito',
-                        text1Style: { fontSize: 18 },
-                        text2Style: { fontSize: 15 },
-                        type: 'success'
-                    })
-                    setVisible(false)
-                }
-            } catch (error) {
-                console.error('Error al agendar cita', error)
+        try {
+            const id = uuidv4()
+            const result = await db.runAsync('INSERT INTO citas (id, cliente_id, fecha, huerto_id, tecnico_id, nombre, apellido) VALUES(?,?,?,?,?,?,?)', id, form.clientId, form.date.toString(), form.gardenId, form.tecnicoId, form.name, form.lastname)
+            if (result.changes > 0) {
                 getToastData({
-                    type: "error",
-                    text1: 'Error',
-                    text2: 'Algo salio mal al agendar la cita',
+                    text1: 'OK',
+                    text2: 'La cita se ha agendado con exito',
                     text1Style: { fontSize: 18 },
-                    text2Style: { fontSize: 15 }
+                    text2Style: { fontSize: 15 },
+                    type: 'success'
                 })
+                setVisible(false)
             }
+        } catch (error) {
+            console.error('Error al agendar cita', error)
+            getToastData({
+                type: "error",
+                text1: 'Error',
+                text2: 'Algo salio mal al agendar la cita',
+                text1Style: { fontSize: 18 },
+                text2Style: { fontSize: 15 }
+            })
         }
 
+        // try {
+        //     const response = await axios.post('http://192.168.0.18:3000/tech/citas', newDate)
+
+        //     if (response.status === 201) {
+        //         getToastData({
+        //             text1: 'OK',
+        //             text2: 'La cita se ha agendado con exito',
+        //             text1Style: { fontSize: 18 },
+        //             text2Style: { fontSize: 15 },
+        //             type: 'success'
+        //         })
+        //         setVisible(false)
+        //     }
+        // } catch (error) {
+        //     console.error('Error al agendar cita', error)
+        //     getToastData({
+        //         type: "error",
+        //         text1: 'Error',
+        //         text2: 'Algo salio mal al agendar la cita',
+        //         text1Style: { fontSize: 18 },
+        //         text2Style: { fontSize: 15 }
+        //     })
+        // }
     }
 
     return (

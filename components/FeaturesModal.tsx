@@ -4,6 +4,8 @@ import { GardenFeatures, GardenProps } from '../interfaces/user'
 import { BackHandler, FlatList, View } from 'react-native'
 import axios from 'axios'
 import Toast from 'react-native-toast-message'
+import { useSQLiteContext } from 'expo-sqlite'
+import { v4 as uuidv4 } from 'uuid'
 
 interface FeaturesModalProps {
     visible: boolean,
@@ -12,11 +14,14 @@ interface FeaturesModalProps {
         key: string,
         value: string
     }[],
-    garden_id: string,
-    edit?: boolean
+    garden: GardenProps,
+    edit?: boolean,
+    getFeatures: (feature: any) => void
 }
 
-const FeaturesModal = ({ visible, setVisible, characteristics, garden_id, edit = false }: FeaturesModalProps) => {
+const FeaturesModal = ({ visible, setVisible, characteristics, garden, edit = false, getFeatures }: FeaturesModalProps) => {
+    const db = useSQLiteContext()
+    console.log('modal', characteristics)
     const [featuresState, setFeaturesState] = useState(characteristics)
     const [newFeature, setNewFeature] = useState({
         key: '',
@@ -51,24 +56,27 @@ const FeaturesModal = ({ visible, setVisible, characteristics, garden_id, edit =
 
 
     const postPutFeatures = async () => {
-        try {
-            const url = 'http://192.168.0.18:3000/tech/caracteristicas';
-
-            const data = edit ? {
-                gardenId: garden_id,
-                newFeatures: arrayToObject(featuresState)
-            } : {
-                gardenId: garden_id,
-                key: newFeature.key,
-                value: newFeature.value
+        if (!edit) {
+            const checkRepeated = garden.caracteristicas.some(item => Object.keys(item).some(key => key === newFeature.key))
+            console.log('ckech',checkRepeated, garden.caracteristicas)
+            if (!checkRepeated) garden.caracteristicas.push({ [newFeature.key]: newFeature.value })
+            else {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Error',
+                    text2: 'Caracteristica repetida',
+                    text1Style: { fontSize: 18 },
+                    text2Style: { fontSize: 15 },
+                })
+                return
             }
+        }
 
-            const method = edit ? axios.put : axios.post
-
-            const response = await method(url, data)
-
-            if (response.status === 200) {
-                setNewFeature({key: '', value: ''})
+        try {
+            const result = await db.runAsync('UPDATE huertos SET caracteristicas = ?;', JSON.stringify(garden.caracteristicas))
+            if (result.changes > 0) {
+                const gardenResponse = await db.getFirstAsync("SELECT caracteristicas FROM huertos WHERE id = ?", garden.id)
+                if (gardenResponse.caracteristicas !== undefined && gardenResponse.caracteristica !== null) getFeatures(JSON.parse(gardenResponse.caracteristicas))
                 Toast.show({
                     type: "success",
                     text1: 'Ok',
@@ -76,10 +84,9 @@ const FeaturesModal = ({ visible, setVisible, characteristics, garden_id, edit =
                     text1Style: { fontSize: 18 },
                     text2Style: { fontSize: 15 },
                 })
-                return
             }
         } catch (error) {
-            console.error('Error al publicar caracteristicas generales', error);
+            console.error(error)
             Toast.show({
                 type: "error",
                 text1: 'Algo fallo...',
@@ -88,6 +95,43 @@ const FeaturesModal = ({ visible, setVisible, characteristics, garden_id, edit =
                 text2Style: { fontSize: 15 },
             })
         }
+        // try {
+        //     const url = 'http://192.168.0.18:3000/tech/caracteristicas';
+
+        //     const data = edit ? {
+        //         gardenId: garden_id,
+        //         newFeatures: arrayToObject(featuresState)
+        //     } : {
+        //         gardenId: garden_id,
+        //         key: newFeature.key,
+        //         value: newFeature.value
+        //     }
+
+        //     const method = edit ? axios.put : axios.post
+
+        //     const response = await method(url, data)
+
+        //     if (response.status === 200) {
+        //         setNewFeature({key: '', value: ''})
+        //         Toast.show({
+        //             type: "success",
+        //             text1: 'Ok',
+        //             text2: 'Caracteristicas subidas correctamente',
+        //             text1Style: { fontSize: 18 },
+        //             text2Style: { fontSize: 15 },
+        //         })
+        //         return
+        //     }
+        // } catch (error) {
+        //     console.error('Error al publicar caracteristicas generales', error);
+        //     Toast.show({
+        //         type: "error",
+        //         text1: 'Algo fallo...',
+        //         text2: 'Error al subir las caracteristicas',
+        //         text1Style: { fontSize: 18 },
+        //         text2Style: { fontSize: 15 },
+        //     })
+        // }
     }
 
     const handleTextChange = (text: string, key: string) => {
@@ -119,7 +163,7 @@ const FeaturesModal = ({ visible, setVisible, characteristics, garden_id, edit =
                                 ItemSeparatorComponent={() => (
                                     <View style={{ height: 10 }}></View>
                                 )}
-                                keyExtractor={(item) => item.key}
+                                keyExtractor={(item) => uuidv4()}
                                 renderItem={({ item }) => (
                                     <TextInput
                                         label={item.key}

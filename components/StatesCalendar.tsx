@@ -3,7 +3,8 @@ import { View, ScrollView, StyleSheet } from 'react-native';
 import { DataTable, Text, Tooltip } from 'react-native-paper';
 import { CalendarProps, ClientProps, DatesData, Meses } from '../interfaces/user';
 import { weeksLeapYear, weeksNonLeapYear } from '../lib/yearTypes';
-import {weeksLeapYearStartToEnd, weeksNonLeapYearStartToEnd} from '../lib/calendar'
+import { weeksLeapYearStartToEnd, weeksNonLeapYearStartToEnd } from '../lib/calendar'
+import { createClientObjects } from '../lib/calendarCalcs';
 
 interface StateCalendarProps {
   calendar: CalendarProps[]
@@ -11,11 +12,12 @@ interface StateCalendarProps {
   dates: DatesData[]
 }
 
-const StatesCalendar = ({ calendar, clients, dates }: StateCalendarProps) => {
+const StatesCalendar = ({ clients, dates }: StateCalendarProps) => {
   const [numberOfItemsPerPageList] = useState([5, 10, 25]);
   const [itemsPerPage, setItemsPerPage] = useState(
     numberOfItemsPerPageList[0]
   );
+  const [calendar, setCalendar] = useState([])
   const [page, setPage] = React.useState<number>(0);
 
   const leftRef = useRef<ScrollView>(null);
@@ -26,6 +28,12 @@ const StatesCalendar = ({ calendar, clients, dates }: StateCalendarProps) => {
   const borderColor = '#C1C0B9';
   const primaryColor = 'dodgerblue';
   const backgroundColor = '#F7F6E7';
+
+
+  useEffect(() => {
+    console.log('RENDERIZADO')
+    if (clients.length > 0) setCalendar(createClientObjects(clients))
+  }, [clients])
 
   useEffect(() => {
     setPage(0);
@@ -66,7 +74,7 @@ const StatesCalendar = ({ calendar, clients, dates }: StateCalendarProps) => {
   }
 
   const from = page * itemsPerPage;
-  const to = Math.min((page + 1) * itemsPerPage, calendar.length)
+  const to = Math.min((page + 1) * itemsPerPage, clients.length)
 
   return (
     <View>
@@ -151,23 +159,23 @@ const StatesCalendar = ({ calendar, clients, dates }: StateCalendarProps) => {
 
                                     // Verificar si alguna cita coincide con la semana actual
                                     const cita = dates.find(date => {
-                                      const citaDate = new Date(date.date);
-                                      return new Date(citaDate) >= new Date(weekRange.start) && citaDate <= new Date(weekRange.end) && date.clientId === client.id
+                                      const citaDate = new Date(date.fecha);
+                                      return new Date(citaDate) >= new Date(weekRange.start) && citaDate <= new Date(weekRange.end) && date.cliente_id === client.id
                                     });
-                                    
+
                                     return (
                                       <View key={weekIndex} style={{ height: 28, flex: 1, backgroundColor: bgColor, borderWidth: 1, borderColor: '#e7e7e7', borderRadius: 5 }}>
                                         {
                                           cita ? (
                                             // Renderizar el círculo blanco si hay una cita
                                             <View style={{ justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                                              <Tooltip title={`Fecha: ${new Date(cita.date).toLocaleString('es-MX')}`}>
-                                              <View style={{
-                                                width: 16,
-                                                height: 16,
-                                                borderRadius: 8,
-                                                backgroundColor: '#000'
-                                              }} />
+                                              <Tooltip title={`Fecha: ${new Date(cita.fecha).toLocaleString('es-MX')}`}>
+                                                <View style={{
+                                                  width: 16,
+                                                  height: 16,
+                                                  borderRadius: 8,
+                                                  backgroundColor: '#000'
+                                                }} />
                                               </Tooltip>
                                             </View>
                                           ) : (

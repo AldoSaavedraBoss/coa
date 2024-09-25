@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { FlatList, Pressable, View, StyleSheet, ScrollView } from 'react-native'
 import axios from 'axios'
-import { ClientProps, GardenProps, ReportProps } from '../../../interfaces/user'
+import { ClientProps, GardenProps, ReportProps, ToastData } from '../../../interfaces/user'
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Text, Card, Button } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import ReportModal from '../../../components/ReportModal';
+import NewGardenModal from '../../../components/NewGardenModal';
+import { useSQLiteContext } from 'expo-sqlite';
 
 type RootStackParamList = {
   ClientDetail: { client: ClientProps }; // Define el tipo de `garden` si lo conoces
@@ -14,24 +16,42 @@ type RootStackParamList = {
 type DetallesProps = NativeStackScreenProps<RootStackParamList, 'ClientDetail'>;
 
 const ClientDetail = ({ route, navigation }: DetallesProps) => {
+  const db = useSQLiteContext()
   const { client } = route.params;
   const [loading, setLoading] = useState(true)
   const [gardens, setGardens] = useState<GardenProps[]>([])
   const [reportsList, setReportsList] = useState<ReportProps[]>([])
   const [modalReport, setModalReport] = useState(false)
+  const [newGardenModal, setNewGardenModal] = useState(false)
   const [selectedReport, setSelectedReport] = useState<ReportProps | null>(null)
 
 
   useEffect(() => {
     const getData = async () => {
       try {
-        const response = await axios.get(`http://192.168.0.18:3000/gardens/${client.id}`)
-        setGardens(response.data)
-      } catch (error) {
+        const result: GardenProps[] = await db.getAllAsync("SELECT * FROM huertos WHERE cliente_id = ?", client.id)
+        if (result.length > 0) setGardens(() => {
+          const aux: GardenProps[] = result.map(garden => ({
+            ...garden,
+            caracteristicas: JSON.parse(garden.caracteristicas),
+            fertilizaciones_pendientes: JSON.parse(garden.fertilizaciones_pendientes),
+            historial_fertilizantes: JSON.parse(garden.historial_fertilizantes),
+            historial_estados: JSON.parse(garden.historial_estados),
+            recomendaciones: JSON.parse(garden.recomendaciones)
+          }))
 
-      } finally {
-        setLoading(false)
+          return aux
+        })
+      } catch (error) {
       }
+      // try {
+      //   const response = await axios.get(`http://192.168.0.18:3000/gardens/${client.id}`)
+      //   setGardens(response.data)
+      // } catch (error) {
+
+      // } finally {
+      //   setLoading(false)
+      // }
     }
     getData()
   }, [])
@@ -42,15 +62,55 @@ const ClientDetail = ({ route, navigation }: DetallesProps) => {
 
   const getReportHistory = async () => {
     try {
-      const response = await axios.get(`http://192.168.0.18:3000/tech/reportes/${client.id}`)
-      if (response.status === 200) {
-        setReportsList(response.data)
+      const result: ReportProps[] = await db.getAllAsync('SELECT * FROM reportes WHERE agricultor_id = ?', client.id)
+      if (result.length > 0) {
+        setReportsList(() => {
+          return result.map(report => ({
+            ...report,
+            enfermedades: JSON.parse(report.enfermedades),
+            observaciones: JSON.parse(report.observaciones),
+            plagas: JSON.parse(report.plagas),
+            recomendaciones: JSON.parse(report.recomendaciones)
+          }))
+        })
       }
     } catch (error) {
       console.error('Error al obtener los reportes', error)
       Toast.show({ type: 'error', text1: 'Error', text2: 'Error al obtener los reportes, inténtelo mas tarde', text1Style: { fontSize: 18 }, text2Style: { fontSize: 15 }, position: 'bottom' })
     }
+    // try {
+    //   const response = await axios.get(`http://192.168.0.18:3000/tech/reportes/${client.id}`)
+    //   if (response.status === 200) {
+    //     setReportsList(response.data)
+    //   }
+    // } catch (error) {
+    //   console.error('Error al obtener los reportes', error)
+    //   Toast.show({ type: 'error', text1: 'Error', text2: 'Error al obtener los reportes, inténtelo mas tarde', text1Style: { fontSize: 18 }, text2Style: { fontSize: 15 }, position: 'bottom' })
+    // }
   }
+
+  const getToastData = (obj: ToastData) => {
+    Toast.show({
+      type: obj.type,
+      text1: obj.text1,
+      text2: obj.text2,
+      text1Style: obj.text1Style,
+      text2Style: obj.text2Style,
+    })
+  }
+
+  const getNewGarden = (garden: GardenProps) => {
+    const newGarden: GardenProps = {
+      ...garden,
+      caracteristicas: JSON.parse(garden.caracteristicas),
+      fertilizaciones_pendientes: JSON.parse(garden.fertilizaciones_pendientes),
+      historial_estados: JSON.parse(garden.historial_estados),
+      historial_fertilizantes: JSON.parse(garden.historial_fertilizantes),
+      recomendaciones: JSON.parse(garden.recomendaciones)
+    }
+    setGardens(prev => [...prev].concat(newGarden))
+  }
+
 
   return (
     <View style={{ flex: 1 }}>
@@ -80,7 +140,10 @@ const ClientDetail = ({ route, navigation }: DetallesProps) => {
         ) : null
       }
 
-      <Button icon='format-list-bulleted' mode='elevated' onPress={getReportHistory} style={{ width: 200, marginHorizontal: 'auto' }}>Ver historial de reportes</Button>
+      <View style={{ marginHorizontal: 'auto', gap: 12 }}>
+        <Button icon='account-plus' mode='contained' onPress={() => setNewGardenModal(true)} style={{ width: 200 }}>Agregar nuevo huerto</Button>
+        <Button icon='format-list-bulleted' mode='contained' onPress={getReportHistory} style={{ width: 200, marginBottom: 40 }}>Ver historial de reportes</Button>
+      </View>
 
       {
         reportsList.length > 0 && (
@@ -109,6 +172,7 @@ const ClientDetail = ({ route, navigation }: DetallesProps) => {
       }
 
       <ReportModal visible={modalReport} setVisible={setModalReport} client={client} data={selectedReport} setData={setSelectedReport} />
+      <NewGardenModal visible={newGardenModal} setVisible={setNewGardenModal} client={client} getToastData={getToastData} getNewGarden={getNewGarden} />
     </View>
   )
 }

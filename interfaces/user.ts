@@ -35,7 +35,7 @@ export interface GardenProps {
   nombre: string
   recomendaciones: string[]
   fertilizaciones_pendientes: string[]
-  historial_fertilizante: FertilizerData[]
+  historial_fertilizantes: FertilizerData[]
   historial_estados: GardenStates[]
 }
 
@@ -46,7 +46,8 @@ export interface ClientProps {
   apellido: string
   rol: rol
   creacion: string
-  nombre: string
+  nombre: string,
+  historial_estados_huertos: string
 }
 
 export interface ReportProps {
@@ -114,9 +115,16 @@ export interface Meses {
 
 export interface DatesData {
   id: string
-  clientId: string
-  date: string
-  gardenId: string
-  name: string
-  apellidos: string
+  cliente_id: string
+  fecha: string
+  huerto_id: string
+  nombre: string
+  apellido: string
+}
+
+export interface SQLiteDB {
+  execAsync: (query: string, args?: any[]) => Promise<any>;
+  getAllAsync: (query: string, args?: any[]) => Promise<any[]>;
+  getFirstAsync: (query: string, args?: any[]) => Promise<any>;
+  runAsync: (query: string, ...args: any[]) => Promise<{ lastInsertRowId: number, changes: number }>;
 }

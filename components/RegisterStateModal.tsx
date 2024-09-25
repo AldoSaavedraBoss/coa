@@ -5,6 +5,7 @@ import { FlatList, View, StyleSheet } from 'react-native'
 import { Dropdown } from 'react-native-element-dropdown';
 import Toast from 'react-native-toast-message';
 import axios from 'axios';
+import { useSQLiteContext } from 'expo-sqlite';
 
 interface FeaturesModalProps {
     visible: boolean,
@@ -17,9 +18,11 @@ interface NewGardenData {
     id: string,
     state: string,
     attributes: string[],
+    date: Date
 }
 
 const RegisterStateModal = ({ visible, setVisible, clients, getToastData }: FeaturesModalProps) => {
+    const db = useSQLiteContext()
     const [newGardenStatus, setNewGardenStatus] = useState<NewGardenData[]>([])
 
     const states = [
@@ -30,7 +33,7 @@ const RegisterStateModal = ({ visible, setVisible, clients, getToastData }: Feat
     ]
 
     useEffect(() => {
-        if(visible){
+        if (visible) {
             const initialStatus = clients.map(client => ({
                 id: client.id,
                 state: 'todo bien',
@@ -59,29 +62,58 @@ const RegisterStateModal = ({ visible, setVisible, clients, getToastData }: Feat
     const handleSendData = async () => {
         console.log('entro')
         try {
-            const response = await axios.post('http://192.168.0.18:3000/tech/registrar/estados', newGardenStatus)
-            if (response.status === 200) {
-                const toastObj: ToastData = {
-                    type: 'success',
-                    text1: 'Ok',
-                    text2: 'Los estados se ha registrado exitosamente',
-                    text1Style: { fontSize: 18 },
-                    text2Style: { fontSize: 15 },
+
+            for (let i = 0; i < clients.length; i++) {
+                for (let x = 0; x < newGardenStatus.length; x++) {
+                    if (clients[i].id === newGardenStatus[x].id) {
+                        const parsed = JSON.parse(clients[i].historial_estados_huertos)
+                        parsed.push({
+                            atributos: newGardenStatus[x].attributes,
+                            estado: newGardenStatus[x].state,
+                            fecha: newGardenStatus[x].date
+                        })
+                        const seriallized = JSON.stringify(parsed)
+                        const result = await db.runAsync('UPDATE usuarios SET historial_estados_huertos = ? WHERE id = ?', seriallized, clients[i].id)
+                        const toastObj: ToastData = {
+                            type: 'success',
+                            text1: 'Ok',
+                            text2: 'Los estados se ha registrado exitosamente',
+                            text1Style: { fontSize: 18 },
+                            text2Style: { fontSize: 15 },
+                        }
+                        getToastData(toastObj)
+                        didUnmount()
+                        break;
+                    }
                 }
-                getToastData(toastObj)
-                didUnmount()
             }
         } catch (error) {
-            console.error('Error al enviar los estados de los huertos', error)
-            Toast.show({
-                type: "error",
-                text1: 'Error',
-                text2: 'Algo salio mal al registrar los estados',
-                text1Style: { fontSize: 18 },
-                text2Style: { fontSize: 15 },
-                position: 'bottom'
-            })
+            console.log(error)
         }
+        // try {
+        //     const response = await axios.post('http://192.168.0.18:3000/tech/registrar/estados', newGardenStatus)
+        //     if (response.status === 200) {
+        //         const toastObj: ToastData = {
+        //             type: 'success',
+        //             text1: 'Ok',
+        //             text2: 'Los estados se ha registrado exitosamente',
+        //             text1Style: { fontSize: 18 },
+        //             text2Style: { fontSize: 15 },
+        //         }
+        //         getToastData(toastObj)
+        //         didUnmount()
+        //     }
+        // } catch (error) {
+        //     console.error('Error al enviar los estados de los huertos', error)
+        //     Toast.show({
+        //         type: "error",
+        //         text1: 'Error',
+        //         text2: 'Algo salio mal al registrar los estados',
+        //         text1Style: { fontSize: 18 },
+        //         text2Style: { fontSize: 15 },
+        //         position: 'bottom'
+        //     })
+        // }
     }
 
     const didUnmount = () => {
@@ -106,7 +138,7 @@ const RegisterStateModal = ({ visible, setVisible, clients, getToastData }: Feat
                         <FlatList
                             data={clients}
                             renderItem={({ item, index }) => (
-                                <View style={[{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderStyle: 'dotted', marginVertical: 8, borderRadius: 6, paddingVertical: 8, justifyContent: 'center' }, index % 2 == 0 && {backgroundColor:'#A0A0F9' }]}>
+                                <View style={[{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderStyle: 'dotted', marginVertical: 8, borderRadius: 6, paddingVertical: 8, justifyContent: 'center' }, index % 2 == 0 && { backgroundColor: '#A0A0F9' }]}>
                                     <Text>{`${item.nombre} ${item.apellido.split(' ')[0]}`}</Text>
                                     <View>
                                         <Dropdown
@@ -115,7 +147,7 @@ const RegisterStateModal = ({ visible, setVisible, clients, getToastData }: Feat
                                             value={newGardenStatus[index].state}
                                             labelField="label"
                                             valueField="value"
-                                            containerStyle={{borderRadius: 10}}
+                                            containerStyle={{ borderRadius: 10 }}
                                             onChange={item => {
                                                 setNewGardenStatus(prev => {
                                                     const aux = [...prev]
@@ -142,7 +174,7 @@ const RegisterStateModal = ({ visible, setVisible, clients, getToastData }: Feat
                         />
                     )
                 }
-                <Button icon='playlist-edit' mode='contained' onPress={handleSendData} style={{ width: 160, marginHorizontal: 'auto', marginTop: 40 }}>Registrar</Button>
+                <Button icon='playlist-edit' mode='contained' onPress={handleSendData} style={{ width: 160, marginHorizontal: 'auto', marginVertical: 40 }}>Registrar</Button>
             </Modal>
         </Portal>
     )

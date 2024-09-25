@@ -6,6 +6,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Dropdown } from "react-native-element-dropdown";
 import axios from "axios";
 import Toast from 'react-native-toast-message';
+import { useSQLiteContext } from "expo-sqlite";
+import { v4 as uuidv4 } from "uuid";
 
 interface ReportModalProps {
     visible: boolean,
@@ -40,7 +42,8 @@ interface FormFields {
 }
 
 const ReportModal = ({ visible, setVisible, garden, client, data, setData }: ReportModalProps) => {
-    console.log('plagasss',data?.plagas)
+    const db = useSQLiteContext()
+    console.log('plagasss', data?.plagas)
     const [form, setForm] = useState<FormFields>({
         nombre: data?.nombre ?? `${client.nombre} ${client.apellido}`,
         huerto: data?.nombre_huerto ?? garden?.nombre ?? '',
@@ -79,10 +82,9 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
             value: 'Todo bien',
             color: '#5ccb5f'
         }]
-    
 
-    const [errors, setErrors] = useState<string[]>([])
-    const [mode, setMode] = useState('date');
+
+    const [errors, setErrors] = useState<string[]>([]);
     const [show, setShow] = useState(false);
 
     const onChangeDateTime = (event: any, selectedDate: Date | undefined) => {
@@ -90,10 +92,6 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
         setForm(prev => ({ ...prev, date: selectedDate ?? new Date() }))
     };
 
-    const showDateTimePicker = (currentMode: string) => {
-        setShow(true);
-        setMode(currentMode);
-    };
 
     const addSuggestionField = () => {
         setForm(prevForm => ({
@@ -111,6 +109,27 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
 
     const didUnmount = () => {
         if (setData) setData(null)
+        setForm({
+            nombre: '',
+            huerto: '',
+            fecha: new Date(),
+            etapa: '',
+            plagas: [{
+                plaga: '',
+                ixs: 0,
+                accion: '',
+                producto: ''
+            }],
+            enfermedades: [{
+                enfermedad: '',
+                ixs: 0,
+                accion: '',
+                producto: ''
+            }],
+            recomendaciones: [""],
+            observaciones: [""],
+            estado_general: ""
+        })
         setVisible(false)
     }
 
@@ -166,11 +185,11 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
             nombre: form.nombre,
             nombre_huerto: form.huerto
         }
-        console.log('reporte hecho', report)
         try {
-            const response = await axios.post('http://192.168.0.18:3000/tech/reportes', report)
-            console.log('respuesta de insertar un reporte', response.data)
-            if (response.status === 201) {
+            const id = uuidv4()
+            const result = await db.runAsync('INSERT INTO reportes (id, agricultor_id, estado_general,  etapa_fenologica, fecha,  huerto_id, nombre, nombre_huerto, enfermedades, observaciones, plagas, recomendaciones) VALUES (?,?,?,?,?,?,?,?,?,?,?,?);', id, report.agricultor_id, report.estado_general, report.etapa_fenologica, new Date().toString(), report.huerto_id, report.nombre, report.nombre_huerto, JSON.stringify(report.enfermedades), JSON.stringify(report.observaciones), JSON.stringify(report.plagas), JSON.stringify(report.recomendaciones))
+
+            if (result.changes > 0) {
                 Toast.show({
                     type: 'success',
                     text1: 'Ok',
@@ -179,10 +198,8 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
                     text2Style: { fontSize: 15 },
                     position: 'bottom'
                 })
-                setVisible(false)
+                return
             }
-        } catch (error) {
-            console.error('Error al enviar reporte', error)
             Toast.show({
                 type: "error",
                 text1: 'Error',
@@ -191,24 +208,76 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
                 text2Style: { fontSize: 15 },
                 position: 'bottom'
             })
+        } catch (error) {
+            console.error(error)
         }
+        // try {
+        //     const response = await axios.post('http://192.168.0.18:3000/tech/reportes', report)
+        //     console.log('respuesta de insertar un reporte', response.data)
+        //     if (response.status === 201) {
+        //         Toast.show({
+        //             type: 'success',
+        //             text1: 'Ok',
+        //             text2: 'El reporte se ha subido exitosamente',
+        //             text1Style: { fontSize: 18 },
+        //             text2Style: { fontSize: 15 },
+        //             position: 'bottom'
+        //         })
+        //         setVisible(false)
+        //     }
+        // } catch (error) {
+        //     console.error('Error al enviar reporte', error)
+        //     Toast.show({
+        //         type: "error",
+        //         text1: 'Error',
+        //         text2: 'Algo salio mal al subir el reporte',
+        //         text1Style: { fontSize: 18 },
+        //         text2Style: { fontSize: 15 },
+        //         position: 'bottom'
+        //     })
+        // }
     }
 
-    const editReport = () => {
-        setVisible(false)
+    const editReport = async () => {
+        const report = {
+            agricultor_id: garden?.cliente_id ?? '',
+            enfermedades: form.enfermedades,
+            estado_general: form.estado_general,
+            etapa_fenologica: form.etapa,
+            fecha: form.fecha,
+            huerto_id: garden?.id ?? '',
+            observaciones: form.observaciones,
+            plagas: form.plagas,
+            recomendaciones: form.recomendaciones,
+            nombre: form.nombre,
+            nombre_huerto: form.huerto
+        }
+        try {
+            const result = await db.runSync('UPDATE reportes SET agricultor_id = ?, estado_general = ?, etapa_fenologica = ?, fecha = ?, huerto_id = ?, nombre = ?, nombre_huerto = ?, enfermedades = ?, observaciones = ?, plagas = ?, reomendaciones = ? WHERE id = ?', report.agricultor_id, report.estado_general, report.etapa_fenologica, new Date().toString(), report.huerto_id, report.nombre, report.nombre_huerto, JSON.stringify(report.enfermedades), JSON.stringify(report.observaciones), JSON.stringify(report.plagas), JSON.stringify(report.recomendaciones), data?.id || '')
+
+            if (result.changes > 0) Toast.show({
+                type: 'success',
+                text1: 'Ok',
+                text2: 'El reporte se ha subido exitosamente',
+                text1Style: { fontSize: 18 },
+                text2Style: { fontSize: 15 },
+                position: 'bottom'
+            })
+        } catch (error) {
+            console.error(error)
+        }
     }
 
     return (
         <Portal>
-            <Toast />
+            
             <Modal style={{ flex: 1, backgroundColor: '#fff' }} visible={visible} onDismiss={didUnmount}>
                 <ScrollView style={{ paddingHorizontal: 10, paddingBottom: 20, marginTop: 10 }}>
-                    <Text>{data?.id}</Text>
                     <IconButton
                         icon="close"
                         iconColor='#777777'
                         size={20}
-                        style={{marginLeft: 'auto'}}
+                        style={{ marginLeft: 'auto' }}
                         containerColor="#dddddd"
                         onPress={didUnmount}
                     />
@@ -223,7 +292,7 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
                     )}
                     <TextInput label={'Productor'} editable={false} value={form.nombre} style={StyleSheet.compose(styles.mainInputs, styles.inputs)} />
                     <TextInput label={'Huerto'} editable={false} value={form.huerto} style={styles.mainInputs} />
-                    <TextInput label={'Fecha'} value={new Date(form.fecha).toLocaleDateString()} onPress={() => showDateTimePicker('date')} style={styles.mainInputs} />
+                    <TextInput label={'Fecha'} value={new Date(form.fecha).toLocaleDateString()} onPress={() => setShow(true)} style={styles.mainInputs} />
                     <TextInput label={'Etapa Fenológica'} value={form.etapa} onChangeText={text => setForm(prev => ({ ...prev, etapa: text }))} error={errors.includes('stage')} />
                     <HelperText type="error" visible={errors.includes('stage')}>Debe incluir una etapa</HelperText>
 
@@ -238,11 +307,20 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
                                         updatedPests[i].plaga = text
                                         return { ...prev, plagas: updatedPests }
                                     })} />
-                                    <TextInput label={'I x S'} keyboardType="numeric" value={`${item.ixs}%`} onChangeText={(text) => setForm(prev => {
-                                        const updatedPests = [...prev.plagas]
-                                        updatedPests[i].ixs = Number(text)
-                                        return { ...prev, plagas: updatedPests }
-                                    })} />
+                                    <TextInput
+                                        label={'I x S'}
+                                        keyboardType="numeric"
+                                        value={item.ixs.toString()}
+                                        onChangeText={(text) => setForm(prev => {
+                                            const updatedPests = [...prev.plagas]
+                                            if (Number(text) <= 100) {
+                                                updatedPests[i].ixs = Number(text)
+                                            } else {
+                                                updatedPests[i].ixs = 100
+                                            }
+                                            return { ...prev, plagas: updatedPests }
+                                        })}
+                                    />
                                     <TextInput label={'Acción'} value={item.accion} onChangeText={(text) => setForm(prev => {
                                         const updatedPests = [...prev.plagas]
                                         updatedPests[i].accion = text
@@ -256,7 +334,7 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
                                 </View>
                             )
                         }))
-                        : null
+                            : null
                     }
                     <Button icon="plus" mode="contained" onPress={() => setForm(prev => ({
                         ...prev,
@@ -274,9 +352,13 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
                                         updateDisease[i].enfermedad = text
                                         return { ...prev, enfermedades: updateDisease }
                                     })} />
-                                    <TextInput label={'I x S'} keyboardType="numeric" value={`${item.ixs}%`} onChangeText={(text) => setForm(prev => {
+                                    <TextInput label={'I x S'} keyboardType="numeric" value={item.ixs.toString()} onChangeText={(text) => setForm(prev => {
                                         const updateDisease = [...prev.enfermedades]
-                                        updateDisease[i].ixs = Number(text)
+                                        if (Number(text) <= 100) {
+                                            updateDisease[i].ixs = Number(text)
+                                        } else {
+                                            updateDisease[i].ixs = 100
+                                        }
                                         return { ...prev, enfermedades: updateDisease }
                                     })} />
                                     <TextInput label={'Acción'} value={item.accion} onChangeText={(text) => setForm(prev => {
@@ -302,7 +384,7 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
 
                     <View style={{ gap: 10 }}>
                         {
-                           form.recomendaciones ? (form.recomendaciones?.map((item, i) => (
+                            form.recomendaciones ? (form.recomendaciones?.map((item, i) => (
                                 <TextInput
                                     key={`suggestion-${i}`}
                                     label={`Recomendación: ${i + 1}`}
@@ -383,6 +465,7 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
                     }
 
                 </ScrollView>
+                <Toast />
             </Modal>
         </Portal>
     )

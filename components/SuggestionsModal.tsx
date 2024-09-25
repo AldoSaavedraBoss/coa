@@ -3,15 +3,18 @@ import { View, ScrollView, BackHandler } from 'react-native'
 import Toast from 'react-native-toast-message';
 import { IconButton, Button, TextInput, Modal, Portal } from 'react-native-paper'
 import axios from 'axios';
+import { useSQLiteContext } from 'expo-sqlite';
 import { GardenProps } from '../interfaces/user';
 
 interface SuggestionsModalProps {
     visible: boolean,
     setVisible: React.Dispatch<React.SetStateAction<boolean>>,
-    garden: GardenProps
+    garden: GardenProps,
+    getSuggestions: (obj: string[]) => void
 }
 
-const SuggestionsModal = ({ visible, setVisible, garden }: SuggestionsModalProps) => {
+const SuggestionsModal = ({ visible, setVisible, garden, getSuggestions }: SuggestionsModalProps) => {
+    const db = useSQLiteContext()
     const [generalSuggestions, setGeneralSuggestions] = useState([''])
 
     const addSuggestionField = () => {
@@ -22,7 +25,6 @@ const SuggestionsModal = ({ visible, setVisible, garden }: SuggestionsModalProps
         const newSuggestions = generalSuggestions.filter(sugg => sugg !== '')
         if (newSuggestions.length === 0) {
             Toast.show({
-
                 type: "error",
                 text1: 'Faltan datos',
                 text2: 'Tienes haber por lo menos 1 sugerencia',
@@ -31,13 +33,14 @@ const SuggestionsModal = ({ visible, setVisible, garden }: SuggestionsModalProps
             })
             return
         }
+        const addSuggestions = garden.recomendaciones.concat(newSuggestions)
+        console.log('adds',addSuggestions, JSON.stringify(addSuggestions))
         try {
-            const response = await axios.post('http://192.168.0.18:3000/tech/sugerencias', {
-                gardenId: garden.id,
-                newSuggestions: newSuggestions
-            });
-            if (response.status === 200) {
+
+            const result = await db.runAsync('UPDATE huertos SET recomendaciones = ? WHERE id = ?', JSON.stringify(addSuggestions), garden.id)
+            if (result.changes > 0) {
                 setGeneralSuggestions([''])
+                getSuggestions(addSuggestions)
                 Toast.show({
                     type: "success",
                     text1: 'Ok',
@@ -46,16 +49,36 @@ const SuggestionsModal = ({ visible, setVisible, garden }: SuggestionsModalProps
                     text2Style: { fontSize: 15 },
                 })
             }
+//             const updatedGarden = await db.getFirstAsync('SELECT recomendaciones FROM huertos WHERE id = ?', garden.id);
+// console.log("Datos actualizados:", updatedGarden);
         } catch (error) {
-            console.error('Error al publicar sugerencias generales', error);
-            Toast.show({
-                type: "error",
-                text1: 'Algo fallo...',
-                text2: 'Error al subir las sugerencias',
-                text1Style: { fontSize: 18 },
-                text2Style: { fontSize: 15 },
-            })
+            console.error(error)
         }
+        // try {
+        //     const response = await axios.post('http://192.168.0.18:3000/tech/sugerencias', {
+        //         gardenId: garden.id,
+        //         newSuggestions: newSuggestions
+        //     });
+        //     if (response.status === 200) {
+        //         setGeneralSuggestions([''])
+        //         Toast.show({
+        //             type: "success",
+        //             text1: 'Ok',
+        //             text2: 'Sugerencias subidas correctamente',
+        //             text1Style: { fontSize: 18 },
+        //             text2Style: { fontSize: 15 },
+        //         })
+        //     }
+        // } catch (error) {
+        //     console.error('Error al publicar sugerencias generales', error);
+        //     Toast.show({
+        //         type: "error",
+        //         text1: 'Algo fallo...',
+        //         text2: 'Error al subir las sugerencias',
+        //         text1Style: { fontSize: 18 },
+        //         text2Style: { fontSize: 15 },
+        //     })
+        // }
     }
 
     const handleBackButton = () => {

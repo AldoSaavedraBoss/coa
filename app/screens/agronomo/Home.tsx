@@ -2,23 +2,28 @@ import React, { useEffect, useState } from 'react'
 import { View, Pressable, StyleSheet, FlatList, ActivityIndicator, ScrollView } from 'react-native'
 import { Text, Button, DataTable, Searchbar } from 'react-native-paper'
 import { clearUserData, getUserData } from '../../../storage/auth';
-import { AuthProps, CalendarProps, ClientProps, DatesData } from '../../../interfaces/user';
+import { AuthProps, CalendarProps, ClientProps, DatesData, ToastData } from '../../../interfaces/user';
 import axios from 'axios'
 // import StateGardenModal from '../../../components/StateGardenModal';
 import StatesCalendar from '../../../components/StatesCalendar';
 import debounce from 'debounce';
 import NewClientModal from '../../../components/NewClientModal';
-import Toast, { ToastData } from 'react-native-toast-message';
+import Toast from 'react-native-toast-message';
 import DatesModal from '../../../components/DatesModal';
 import RegisterStateModal from '../../../components/RegisterStateModal';
+import { useSQLiteContext } from 'expo-sqlite';
+import { useDrizzleStudio } from 'expo-drizzle-studio-plugin';
 
 type HomeState = 'profile' | 'producers'
 
 
 const Home = ({ navigation }: { navigation: any }) => {
+    const db = useSQLiteContext()
     const [tab, setTab] = useState<HomeState>('profile')
     const [user, setUser] = useState<null | AuthProps>(null)
     const [loading, setLoading] = useState(false)
+
+    useDrizzleStudio(db)
 
     const [clients, setClients] = useState<ClientProps[]>([])
     const [calendar, setCalendar] = useState<CalendarProps[]>([])
@@ -28,7 +33,7 @@ const Home = ({ navigation }: { navigation: any }) => {
     const [showDatesModal, setShowDatesModal] = useState(false)
     const [newClientModal, setNewClientModal] = useState(false)
     const [registerStateModal, setRegisterStateModal] = useState(false)
-;
+        ;
     // const [lastVisible, setLastVisible] = useState(null);
     // const [total, setTotal] = useState(0)
 
@@ -36,23 +41,24 @@ const Home = ({ navigation }: { navigation: any }) => {
     const [searchQueryList, setSearchQueryList] = useState('');
 
 
-    const getClients = async (uid: string) => {
-        return await axios.get(`http://192.168.0.18:3000/tech/clients/${uid}`)
-    }
+    // const getClients = async (uid: string) => {
+    //     return await axios.get(`http://192.168.0.18:3000/tech/clients/${uid}`)
+    // }
 
-    const getCalendar = async (uid: string) => {
-        return await axios.get(`http://192.168.0.18:3000/tech/calendario/${uid}`)
-    }
+    // const getCalendar = async (uid: string) => {
+    //     return await axios.get(`http://192.168.0.18:3000/tech/calendario/${uid}`)
+    // }
 
-    const getDates = async (uid: string) => {
-        return await axios.get(`http://192.168.0.18:3000/tech/citas`, {
-            params: {
-                tecnico: uid
-            }
-        })
-    }
+    // const getDates = async (uid: string) => {
+    //     return await axios.get(`http://192.168.0.18:3000/tech/citas`, {
+    //         params: {
+    //             tecnico: uid
+    //         }
+    //     })
+    // }
 
     useEffect(() => {
+
         setLoading(false)
         const getData = async () => {
             try {
@@ -65,16 +71,18 @@ const Home = ({ navigation }: { navigation: any }) => {
 
                 if (data) {
                     setUser(data);
+                    getClients(data.uid)
+                    getDates(data.uid)
 
-                    const [clientResponse, calendarResponse, datesResponse] = await Promise.all([
-                        getClients(data.uid),
-                        getCalendar(data.uid),
-                        getDates(data.uid)
-                    ])
+                    // const [clientResponse, calendarResponse, datesResponse] = await Promise.all([
+                    //     getClients(data.uid),
+                    //     getCalendar(data.uid),
+                    //     getDates(data.uid)
+                    // ])
 
-                    if (clientResponse.status === 200) setClients(clientResponse.data)
-                    if (calendarResponse.status === 200) setCalendar(calendarResponse.data)
-                    if (datesResponse.status === 200) setDates(datesResponse.data)
+                    // if (clientResponse.status === 200) setClients(clientResponse.data)
+                    // if (calendarResponse.status === 200) setCalendar(calendarResponse.data)
+                    // if (datesResponse.status === 200) setDates(datesResponse.data)
                 } else {
                     console.error('No se pudieron obtener los datos del usuario')
                 }
@@ -87,6 +95,36 @@ const Home = ({ navigation }: { navigation: any }) => {
 
         getData();
     }, [])
+
+    const getClients = async (id: string) => {
+        const result: ClientProps[] = await db.getAllAsync('SELECT * FROM usuarios WHERE tecnico_id = ?', id)
+        if (result.length > 0) {
+            setClients(result)
+            const a = JSON.stringify([
+                {
+                    atributos: [
+                        "V",
+                        "F"
+                    ],
+                    estado: "precaucion",
+                    fecha: "2024-09-14T00:45:15.907Z"
+                }
+            ])
+            const b = JSON.parse(a)
+            // const auxCalendar = createClientObjects(result)
+            // console.log(auxCalendar)
+            // setCalendar(auxCalendar)
+        }
+    }
+
+    const getDates = async (id: string) => {
+        try {
+            const result: DatesData[] = await db.getAllAsync('SELECT * FROM citas WHERE tecnico_id= ?', id)
+            if (result.length > 0) setDates(result)
+        } catch (error) {
+
+        }
+    }
 
     const logout = async () => {
         await clearUserData();
@@ -102,10 +140,8 @@ const Home = ({ navigation }: { navigation: any }) => {
     // const to = Math.min((page + 1) * itemsPerPage, dataDB.length);
 
     useEffect(() => {
-        console.log(searchQuery)
         const handleSearch = () => {
             if (searchQuery.trim() === '') {
-                console.log('vacio')
                 setNewClients(clients)
                 setNewCalendar(calendar)
             } else {
@@ -145,7 +181,7 @@ const Home = ({ navigation }: { navigation: any }) => {
     }
 
     return (
-        <ScrollView style={{ flex: 1, padding: 20 }} showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ flex: 1, padding: 20, paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 {/* <Image source={{ uri: 'https://picsum.photos/200/300' }} /> */}
                 <Text variant='labelLarge' style={{ fontSize: 18 }}>{new Date().toLocaleDateString('es-MX', {
@@ -173,6 +209,7 @@ const Home = ({ navigation }: { navigation: any }) => {
                             style={styles.clientsContainer}
                             data={newClients}
                             showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ gap: 16 }}
                             keyExtractor={client => client.id}
                             renderItem={({ item }) => {
                                 return (
@@ -192,7 +229,7 @@ const Home = ({ navigation }: { navigation: any }) => {
                             }}>
 
                         </FlatList>
-                        <Button mode='outlined' onPress={() => setNewClientModal(true)} style={{ width: 230, marginHorizontal: 'auto' }}>Agregar un nuevo usuario</Button>
+                        <Button mode='outlined' onPress={() => setNewClientModal(true)} style={{ width: 230, marginHorizontal: 'auto', marginVertical: 40 }}>Agregar un nuevo usuario</Button>
                     </View>
                 )
             }
@@ -219,29 +256,29 @@ const Home = ({ navigation }: { navigation: any }) => {
                         </View>
                         {
                             loading ? <ActivityIndicator /> : (
-                                <StatesCalendar calendar={newCalendar} clients={newClients} dates={dates}/>
+                                <StatesCalendar calendar={newCalendar} clients={newClients} dates={dates} />
                             )
                         }
                         {/* <Dates clients={clients}/> */}
 
                         <View style={{ gap: 16, marginTop: 'auto' }}>
-                                <Button mode='outlined' onPress={() => setRegisterStateModal(true)} style={{ maxWidth: 260, marginHorizontal: 'auto' }}>Registrar estado de los huertos</Button>
-                                <Button
-                                    mode='outlined'
-                                    onPress={() => setShowDatesModal(true)}
-                                    style={{ maxWidth: 260, marginHorizontal: 'auto' }}
-                                >Agendar cita
-                                </Button>
-                            </View>
+                            <Button mode='outlined' onPress={() => setRegisterStateModal(true)} style={{ maxWidth: 260, marginHorizontal: 'auto' }}>Registrar estado de los huertos</Button>
+                            <Button
+                                mode='outlined'
+                                onPress={() => setShowDatesModal(true)}
+                                style={{ maxWidth: 260, marginHorizontal: 'auto', marginBottom: 40 }}
+                            >Agendar cita
+                            </Button>
+                        </View>
                     </View>
                 )
             }
             {/* modal for looking garden state */}
             <RegisterStateModal visible={registerStateModal} setVisible={setRegisterStateModal} clients={clients} getToastData={getToastData} />
             {/* Modal for loking new client modal */}
-            <NewClientModal visible={newClientModal} setVisible={setNewClientModal} techId={user?.uid} getNewClient={getNewClient} />
-            <DatesModal visible={showDatesModal} setVisible={setShowDatesModal} clients={clients} getToastData={getToastData} tecnico_id={user?.uid || ''}/>
-            <Toast position='bottom'/>
+            <NewClientModal visible={newClientModal} setVisible={setNewClientModal} techId={user?.uid} getNewClient={getNewClient} getToastData={getToastData} />
+            <DatesModal visible={showDatesModal} setVisible={setShowDatesModal} clients={clients} getToastData={getToastData} tecnico_id={user?.uid || ''} />
+            <Toast position='bottom' />
         </ScrollView>
     )
 }
@@ -254,16 +291,13 @@ const styles = StyleSheet.create({
         marginTop: 20
     },
     clientButton: {
-        paddingVertical: 10,
-        width: 200,
-        height: 50,
+        paddingVertical: 6,
+        width: 150,
         borderRadius: 8,
         shadowColor: '#000',
         elevation: 6,
         shadowRadius: 15,
         shadowOffset: { width: 1, height: 13 },
-        marginVertical: 10
-
     },
     textClient: {
         color: 'white',
