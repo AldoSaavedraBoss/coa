@@ -1,16 +1,24 @@
 type rol = 'cliente' | 'tecnico'
 
-export interface AuthProps {
-  token: string
-  refreshToken: string
-  uid: string
-  data: {
-    apellidos: string
-    creacion: Date
-    email: string
-    nombre: string
-    rol: rol
-  }
+// export interface AuthProps {
+//   token: string
+//   refreshToken: string
+//   uid: string
+//   data: {
+//     apellidos: string
+//     creacion: Date
+//     email: string
+//     nombre: string
+//     rol: rol
+//   }
+// }
+export interface AuthProps2 {
+  id: string,
+  apellido: string,
+  creacion: string,
+  email: string,
+  nombre: string,
+  rol: string,
 }
 
 export type GardenFeatures = {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react"
 import { Modal, Text, Portal, TextInput, Button, IconButton, HelperText } from "react-native-paper"
-import { AuthProps, ClientProps, GardenProps, ReportProps } from "../interfaces/user"
+import { AuthProps2, ClientProps, GardenProps, ReportProps } from "../interfaces/user"
 import { ScrollView, View, StyleSheet } from "react-native"
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Dropdown } from "react-native-element-dropdown";

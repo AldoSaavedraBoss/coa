@@ -17,6 +17,7 @@ type RootStackParamList = {
     ClientLayout: { screen?: string } | undefined;
 };
 
+
 const Stack = createNativeStackNavigator()
 const StackClient = createNativeStackNavigator()
 const StackTecnic = createNativeStackNavigator()
@@ -31,9 +32,11 @@ const ClientLayout = ({ route }: NativeStackScreenProps<RootStackParamList, 'Cli
 }
 
 const TecnicLayout = ({ route }) => {
+    const { id } = route.params; 
+    console.log('main', id)
     return (
         <StackTecnic.Navigator initialRouteName='Inicio'>
-            <StackTecnic.Screen name='Inicio' component={HomeAgronomo} options={{ headerShown: false }} />
+            <StackTecnic.Screen name='Inicio' component={HomeAgronomo} initialParams={{ id_user: id }} options={{ headerShown: false }} />
             <StackTecnic.Screen name='Huertos del cliente' component={ClientDetail} />
             <StackTecnic.Screen name='Detalles' component={GardenDetail} />
         </StackTecnic.Navigator>

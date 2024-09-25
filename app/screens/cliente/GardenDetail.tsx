@@ -2,7 +2,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, View, Dimensions, FlatList, } from 'react-native'
 import { Button, Card, Text, List, Icon, Divider, IconButton } from 'react-native-paper';
-import { AuthProps, ClientProps, GardenProps, ReportProps } from '../../../interfaces/user';
+import { AuthProps2, ClientProps, GardenProps, ReportProps } from '../../../interfaces/user';
 import { getUserData } from '../../../storage/auth';
 import ReportModal from '../../../components/ReportModal';
 import Toast from 'react-native-toast-message';
@@ -12,6 +12,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import SuggestionsModal from '../../../components/SuggestionsModal';
 import FeaturesModal from '../../../components/FeaturesModal';
 import FertilizerModal from '../../../components/FertilizerModal';
+import { err } from 'react-native-svg';
 
 type States = 'features' | 'suggestions' | 'nutrition' | 'pests'
 
@@ -35,7 +36,14 @@ const GardenDetail = ({ route }: DetallesProps) => {
 
   const { garden } = route.params;
   const { client } = route.params;
-  const [user, setUser] = useState<null | AuthProps>(null)
+  const [user, setUser] = useState<AuthProps2>({
+    id: '',
+    apellido: '',
+    creacion: '',
+    email: '',
+    nombre: '',
+    rol: '',
+  })
   const [tab, setTab] = useState<States>('suggestions');
   const [report, setReport] = useState(false)
   const [suggestions, setSuggestions] = useState<string[]>(garden.recomendaciones)
@@ -66,35 +74,46 @@ const GardenDetail = ({ route }: DetallesProps) => {
 
   useEffect(() => {
     const getData = async () => {
-      const data = await getUserData();
-      setUser(data)
+      try {
+        const result: AuthProps2 | null = await db.getFirstAsync('SELECT * from usuarios WHERE id = ?', id_user)
+        console.log('resultado', result.id, id_user)
+        if (result !== null && Object.keys(result).length) {
+          setUser(result);
+          getClients(result.id)
+          getDates(result.id)
+        }
+        // const data = await getUserData();
+        // setUser(data)
+      } catch (error) {
+        console.error('Al raer los datos del usuario en gardenDetail', error)
+      }
     }
 
     getData()
   }, [])
 
-  
+
 
   const toggleButton = (value: States) => {
     setTab(value)
   }
 
-  
+
 
   const deleteSuggestion = async (suggestion: string) => {
     const newSuggestions = suggestions.filter(item => item !== suggestion)
     console.log(newSuggestions)
     try {
       const result = await db.runAsync('UPDATE huertos SET recomendaciones = ? WHERE id = ?', JSON.stringify(newSuggestions), garden.id)
-      if(result.changes > 0) {
+      if (result.changes > 0) {
         setSuggestions(newSuggestions)
         Toast.show({
-                type: "success",
-                text1: 'Ok',
-                text2: 'Sugerencia elminada correctamente correctamente',
-                text1Style: { fontSize: 18 },
-                text2Style: { fontSize: 15 },
-              })
+          type: "success",
+          text1: 'Ok',
+          text2: 'Sugerencia elminada correctamente correctamente',
+          text1Style: { fontSize: 18 },
+          text2Style: { fontSize: 15 },
+        })
       }
     } catch (error) {
       console.error(error)
@@ -121,7 +140,7 @@ const GardenDetail = ({ route }: DetallesProps) => {
     // }
   }
 
-  const getSuggestions = (obj: string[])  => {
+  const getSuggestions = (obj: string[]) => {
     console.log('garden detail', suggestions, suggestions.concat(obj))
     setSuggestions(obj)
   }

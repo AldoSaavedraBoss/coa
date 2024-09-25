@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { View, Pressable, StyleSheet, FlatList, ActivityIndicator, ScrollView } from 'react-native'
 import { Text, Button, DataTable, Searchbar } from 'react-native-paper'
 import { clearUserData, getUserData } from '../../../storage/auth';
-import { AuthProps, CalendarProps, ClientProps, DatesData, ToastData } from '../../../interfaces/user';
+import { AuthProps2, CalendarProps, ClientProps, DatesData, ToastData } from '../../../interfaces/user';
 import axios from 'axios'
 // import StateGardenModal from '../../../components/StateGardenModal';
 import StatesCalendar from '../../../components/StatesCalendar';
@@ -17,10 +17,19 @@ import { useDrizzleStudio } from 'expo-drizzle-studio-plugin';
 type HomeState = 'profile' | 'producers'
 
 
-const Home = ({ navigation }: { navigation: any }) => {
+const Home = ({ route, navigation }: { route: any, navigation: any }) => {
     const db = useSQLiteContext()
+    const { id_user } = route.params;
+    console.log('home', id_user)
     const [tab, setTab] = useState<HomeState>('profile')
-    const [user, setUser] = useState<null | AuthProps>(null)
+    const [user, setUser] = useState<AuthProps2>({
+        id: '',
+        apellido: '',
+        creacion: '',
+        email: '',
+        nombre: '',
+        rol: '',
+    })
     const [loading, setLoading] = useState(false)
 
     useDrizzleStudio(db)
@@ -62,30 +71,36 @@ const Home = ({ navigation }: { navigation: any }) => {
         setLoading(false)
         const getData = async () => {
             try {
-                let data: AuthProps = await getUserData();
-
-                if (!data) {
-                    data = await getUserData()
-
+                const result: AuthProps2 | null = await db.getFirstAsync('SELECT * from usuarios WHERE id = ?', id_user)
+                if (result !== null && Object.keys(result).length) {
+                    setUser(result);
+                    getClients(result.id)
+                    getDates(result.id)
                 }
+                // let data: AuthProps = await getUserData();
 
-                if (data) {
-                    setUser(data);
-                    getClients(data.uid)
-                    getDates(data.uid)
+                // if (!data) {
+                //     data = await getUserData()
 
-                    // const [clientResponse, calendarResponse, datesResponse] = await Promise.all([
-                    //     getClients(data.uid),
-                    //     getCalendar(data.uid),
-                    //     getDates(data.uid)
-                    // ])
+                // }
+                // console.log('usuario data', data)
+                // if (data) {
+                //     setUser(data);
+                //     getClients(data.uid)
+                //     getDates(data.uid)
 
-                    // if (clientResponse.status === 200) setClients(clientResponse.data)
-                    // if (calendarResponse.status === 200) setCalendar(calendarResponse.data)
-                    // if (datesResponse.status === 200) setDates(datesResponse.data)
-                } else {
-                    console.error('No se pudieron obtener los datos del usuario')
-                }
+                // const [clientResponse, calendarResponse, datesResponse] = await Promise.all([
+                //     getClients(data.uid),
+                //     getCalendar(data.uid),
+                //     getDates(data.uid)
+                // ])
+
+                // if (clientResponse.status === 200) setClients(clientResponse.data)
+                // if (calendarResponse.status === 200) setCalendar(calendarResponse.data)
+                // if (datesResponse.status === 200) setDates(datesResponse.data)
+                // } else {
+                //     console.error('No se pudieron obtener los datos del usuario')
+                // }
             } catch (error) {
                 console.error('Error al obtener los datos del usuario', error);
             } finally {
@@ -181,7 +196,7 @@ const Home = ({ navigation }: { navigation: any }) => {
     }
 
     return (
-        <ScrollView style={{ flex: 1, padding: 20, paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+        <View style={{ flex: 1, padding: 20, paddingBottom: 20 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 {/* <Image source={{ uri: 'https://picsum.photos/200/300' }} /> */}
                 <Text variant='labelLarge' style={{ fontSize: 18 }}>{new Date().toLocaleDateString('es-MX', {
@@ -191,7 +206,7 @@ const Home = ({ navigation }: { navigation: any }) => {
                 })}</Text>
                 <Button mode='elevated' textColor='#007901' onPress={() => logout()}>Cerrar Sesión</Button>
             </View>
-            <Text variant='headlineSmall'>ING. {user?.data.nombre} {user?.data.apellidos}</Text>
+            <Text variant='headlineSmall'>ING. {user.nombre} {user.apellido}</Text>
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
                 <Button mode={tab === 'profile' ? 'contained' : 'outlined'} onPress={() => setTab('profile')} style={{ width: 150 }}>Mi perfil</Button>
                 <Button mode={tab === 'producers' ? 'contained' : 'outlined'} onPress={() => setTab('producers')} style={{ width: 150 }}>Productores</Button>
@@ -229,13 +244,13 @@ const Home = ({ navigation }: { navigation: any }) => {
                             }}>
 
                         </FlatList>
-                        <Button mode='outlined' onPress={() => setNewClientModal(true)} style={{ width: 230, marginHorizontal: 'auto', marginVertical: 40 }}>Agregar un nuevo usuario</Button>
+                        <Button mode='outlined' onPress={() => setNewClientModal(true)} style={{ width: 230, marginHorizontal: 'auto', marginTop: 40 }}>Agregar un nuevo usuario</Button>
                     </View>
                 )
             }
             {
                 tab === 'profile' && (
-                    <View>
+                    <ScrollView showsVerticalScrollIndicator={false}>
                         <View style={{ flexDirection: 'row', gap: 20, flexWrap: 'wrap', marginVertical: 20, justifyContent: 'center' }}>
                             <View style={styles.meaningfulMarks}>
                                 <View style={{ width: 20, height: 20, backgroundColor: '#009929', borderRadius: 6 }}></View>
@@ -266,20 +281,20 @@ const Home = ({ navigation }: { navigation: any }) => {
                             <Button
                                 mode='outlined'
                                 onPress={() => setShowDatesModal(true)}
-                                style={{ maxWidth: 260, marginHorizontal: 'auto', marginBottom: 40 }}
+                                style={{ maxWidth: 260, marginHorizontal: 'auto' }}
                             >Agendar cita
                             </Button>
                         </View>
-                    </View>
+                    </ScrollView>
                 )
             }
             {/* modal for looking garden state */}
             <RegisterStateModal visible={registerStateModal} setVisible={setRegisterStateModal} clients={clients} getToastData={getToastData} />
             {/* Modal for loking new client modal */}
-            <NewClientModal visible={newClientModal} setVisible={setNewClientModal} techId={user?.uid} getNewClient={getNewClient} getToastData={getToastData} />
-            <DatesModal visible={showDatesModal} setVisible={setShowDatesModal} clients={clients} getToastData={getToastData} tecnico_id={user?.uid || ''} />
+            <NewClientModal visible={newClientModal} setVisible={setNewClientModal} techId={user.id} getNewClient={getNewClient} getToastData={getToastData} />
+            <DatesModal visible={showDatesModal} setVisible={setShowDatesModal} clients={clients} getToastData={getToastData} tecnico_id={user.id} />
             <Toast position='bottom' />
-        </ScrollView>
+        </View>
     )
 }
 

@@ -21,8 +21,9 @@ const Register = () => {
         console.log('asdfasdf')
         const id = uuidv4()
         try {
-            const check: {"COUNT(*)": number} = await db.getFirstAsync('SELECT COUNT(*) FROM autenticacion WHERE email = ?;', email)
-            if(check["COUNT(*)"] > 0) {
+            const check: {"COUNT(*)": number} | null = await db.getFirstAsync('SELECT COUNT(*) FROM autenticacion WHERE email = ?;', email)
+            console.log(check)
+            if(check !== null && check["COUNT(*)"] > 0) {
                 Toast.show({
                     type: 'error',
                     text1: 'Error',
@@ -51,7 +52,7 @@ const Register = () => {
             console.log(result.changes, resultUsers.changes)
 
             if (result.changes > 0 && resultUsers.changes > 0) {
-                navigation.navigate('TecnicLayout')
+                navigation.navigate('TecnicLayout', {id})
                 return
             }
             console.error('No se pudo registrar en autenticacion')

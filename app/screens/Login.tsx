@@ -4,7 +4,7 @@ import { Button } from 'react-native-paper'
 import axios from 'axios'
 import { useNavigation } from '@react-navigation/native'
 import { saveUserData, getUserData, clearUserData } from '../../storage/auth'
-import { AuthProps } from '../../interfaces/user'
+import { AuthProps2 } from '../../interfaces/user'
 import { useSQLiteContext } from 'expo-sqlite'
 import Toast from 'react-native-toast-message'
 
@@ -36,7 +36,8 @@ const Login = () => {
 
     const checkAuthStatus = async () => {
         try {
-            const user: AuthProps = await getUserData()
+            //Authprops tiene el token
+            const user: AuthProps2 = await getUserData()
             const token = user?.token
             if (token) {
                 const isValid = await verifyToken(token);
@@ -80,20 +81,20 @@ const Login = () => {
             // if (result.email === email && result.password === password) {
             const result: { "COUNT(*)": number, id: string } | null = await db.getFirstAsync("SELECT COUNT(*), id from autenticacion WHERE email = ? AND password = ?", email, password)
             if (result !== null && result['COUNT(*)'] > 0) {
-                const userInfo = await db.getFirstAsync('SELECT * FROM usuarios WHERE id = ?', result.id)
-                await saveUserData({
-                    uid: userInfo.id,
-                    refreshToken: '',
-                    token: '',
-                    data: {
-                        apellidos: userInfo.apellido,
-                        creacion: userInfo.creacion,
-                        email: userInfo.email,
-                        nombre: userInfo.nombre,
-                        rol: 'tecnico'
-                    }
-                })
-                navigation.navigate('TecnicLayout')
+                // const userInfo = await db.getFirstAsync('SELECT * FROM usuarios WHERE id = ?', result.id)
+                // await saveUserData({
+                //     uid: userInfo.id,
+                //     refreshToken: '',
+                //     token: '',
+                //     data: {
+                //         apellidos: userInfo.apellido,
+                //         creacion: userInfo.creacion,
+                //         email: userInfo.email,
+                //         nombre: userInfo.nombre,
+                //         rol: 'tecnico'
+                //     }
+                // })
+                navigation.navigate('TecnicLayout', {id: result.id})
             } else {
                 Toast.show({
                     type: "error",
@@ -150,11 +151,11 @@ const Login = () => {
                 <TextInput secureTextEntry={true} value={password} style={styles.input} placeholder='Contraseña' autoCapitalize='none' onChangeText={(text) => setPassword(text)}></TextInput>
                 {
                     loading ? <ActivityIndicator size="large" color="#0000ff" /> :
-                        <Button mode='contained' onPress={signIn} style={{ width: 200, marginHorizontal: 'auto' }} textColor='#fff'>Iniciar</Button>
+                        <Button mode='elevated' onPress={signIn} style={{ width: 200, marginHorizontal: 'auto' }} >Iniciar</Button>
                 }
             </KeyboardAvoidingView>
             <View style={styles.bottomButtonContainer}>
-                <Button onPress={handleRegister} > Registrate </Button>
+                <Button mode='contained' style={{marginHorizontal: 'auto'}} onPress={handleRegister} >Registrate</Button>
             </View>
             <Toast position='bottom' />
         </View>
