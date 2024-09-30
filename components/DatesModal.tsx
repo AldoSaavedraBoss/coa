@@ -6,7 +6,8 @@ import { Dropdown } from "react-native-element-dropdown";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
-import { useSQLiteContext } from 'expo-sqlite';
+import db from '../SQLite/createTables'
+import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 
 interface DatesModalProps {
@@ -18,7 +19,6 @@ interface DatesModalProps {
 }
 
 const DatesModal = ({ visible, setVisible, clients, getToastData, tecnico_id }: DatesModalProps) => {
-    const db = useSQLiteContext()
 
     const [form, setForm] = useState({
         clientId: '',
@@ -26,7 +26,7 @@ const DatesModal = ({ visible, setVisible, clients, getToastData, tecnico_id }: 
         date: new Date(),
         gardenId: '',
         name: '',
-        tecnicoId: ''
+        tecnicoId: tecnico_id
     })
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
@@ -73,19 +73,26 @@ const DatesModal = ({ visible, setVisible, clients, getToastData, tecnico_id }: 
         const getGardens = async () => {
             if (form.clientId === '') return
             try {
-                const result: GardenProps[] = await db.getAllAsync('SELECT * FROM huertos WHERE cliente_id = ?', form.clientId)
 
-                if (result.length > 0) {
-                    const aux: GardenProps[] = result.map(garden => ({
-                        ...garden,
-                        caracteristicas: JSON.parse(garden.caracteristicas),
-                        fertilizaciones_pendientes: JSON.parse(garden.fertilizaciones_pendientes),
-                        historial_estados: JSON.parse(garden.historial_estados),
-                        historial_fertilizantes: JSON.parse(garden.historial_fertilizantes),
-                        recomendaciones: JSON.parse(garden.recomendaciones)
-                    }))
-                    setGardens(aux)
-                }
+                db.transaction(tx => {
+                    tx.executeSql("SELECT * FROM huertos WHERE cliente_id = ?", [form.clientId], (tr, res) => {
+                        console.log('huertos del cliente', res.rows._array)
+
+                        if (res.rows._array.length > 0) {
+                            const aux: GardenProps[] = res.rows._array.map(garden => ({
+                                ...garden,
+                                caracteristicas: JSON.parse(garden.caracteristicas),
+                                fertilizaciones_pendientes: JSON.parse(garden.fertilizaciones_pendientes),
+                                historial_estados: JSON.parse(garden.historial_estados),
+                                historial_fertilizantes: JSON.parse(garden.historial_fertilizantes),
+                                recomendaciones: JSON.parse(garden.recomendaciones)
+                            }))
+                            setGardens(aux)
+                        }
+                    })
+                })
+
+
             } catch (error) {
                 console.error(error)
             }
@@ -107,7 +114,7 @@ const DatesModal = ({ visible, setVisible, clients, getToastData, tecnico_id }: 
     }, [form.clientId])
 
     const bookingDate = async () => {
-    console.log(form.clientId, form.date, form.gardenId, form.tecnicoId)
+        console.log('formulario', form.clientId, form.date, form.gardenId, form.tecnicoId)
         if (!form.clientId || !form.date || !form.gardenId || !form.tecnicoId) {
             Toast.show({
                 text1: 'Algo falta',
@@ -128,26 +135,33 @@ const DatesModal = ({ visible, setVisible, clients, getToastData, tecnico_id }: 
         }
         try {
             const id = uuidv4()
-            const result = await db.runAsync('INSERT INTO citas (id, cliente_id, fecha, huerto_id, tecnico_id, nombre, apellido) VALUES(?,?,?,?,?,?,?)', id, form.clientId, form.date.toString(), form.gardenId, form.tecnicoId, form.name, form.lastname)
-            if (result.changes > 0) {
-                getToastData({
-                    text1: 'OK',
-                    text2: 'La cita se ha agendado con exito',
-                    text1Style: { fontSize: 18 },
-                    text2Style: { fontSize: 15 },
-                    type: 'success'
+            db.transaction(tx => {
+                tx.executeSql("INSERT INTO citas (id, cliente_id, fecha, huerto_id, tecnico_id, nombre, apellido) VALUES(?,?,?,?,?,?,?)", [id, form.clientId, form.date.toString(), form.gardenId, form.tecnicoId, form.name, form.lastname], (tr, res) => {
+                    console.log('insertar cita', res.rowsAffected)
+                    if (res.rowsAffected > 0) {
+                        getToastData({
+                            text1: 'OK',
+                            text2: 'La cita se ha agendado con exito',
+                            text1Style: { fontSize: 18 },
+                            text2Style: { fontSize: 15 },
+                            type: 'success'
+                        })
+                        setVisible(false)
+                    }
+                }, (tr, error) => {
+                    console.error('Error al agendar cita', error)
+                    getToastData({
+                        type: "error",
+                        text1: 'Error',
+                        text2: 'Algo salio mal al agendar la cita',
+                        text1Style: { fontSize: 18 },
+                        text2Style: { fontSize: 15 }
+                    })
                 })
-                setVisible(false)
-            }
-        } catch (error) {
-            console.error('Error al agendar cita', error)
-            getToastData({
-                type: "error",
-                text1: 'Error',
-                text2: 'Algo salio mal al agendar la cita',
-                text1Style: { fontSize: 18 },
-                text2Style: { fontSize: 15 }
             })
+
+        } catch (error) {
+
         }
 
         // try {

@@ -1,13 +1,13 @@
+import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid'
 import { View } from 'react-native'
 import React, { useState } from 'react'
-import { useSQLiteContext } from 'expo-sqlite'
+import db from '../../SQLite/createTables'
 import { useNavigation } from '@react-navigation/native'
 import { Button, IconButton, Text, TextInput } from 'react-native-paper'
 import Toast from 'react-native-toast-message'
 
 const Register = () => {
-    const db = useSQLiteContext()
     const navigation = useNavigation()
     const [name, setName] = useState('')
     const [lastname, setLastname] = useState('')
@@ -18,45 +18,40 @@ const Register = () => {
     const handleRegister = async () => {
         const isValid = validate()
         if (!isValid) return
-        console.log('asdfasdf')
         const id = uuidv4()
         try {
-            const check: {"COUNT(*)": number} | null = await db.getFirstAsync('SELECT COUNT(*) FROM autenticacion WHERE email = ?;', email)
-            console.log(check)
-            if(check !== null && check["COUNT(*)"] > 0) {
-                Toast.show({
-                    type: 'error',
-                    text1: 'Error',
-                    text2: 'Email ya existente',
-                    text1Style: { fontSize: 18 },
-                    text2Style: { fontSize: 15 },
-                })
-                return
-            }
-            const result = await db.runAsync(
-                'INSERT INTO autenticacion (id, email, password, creacion) VALUES (?,?,?,?);',
-                id,
-                email.trim(),
-                password.trim(),
-                new Date().toString()
-            )
-            const resultUsers = await db.runAsync(
-                'INSERT INTO usuarios (id, apellido, creacion, email,  nombre, rol) VALUES (?,?,?,?,?,?)',
-                id,
-                lastname.trim(),
-                new Date().toString(),
-                email.trim(),
-                name.trim(),
-                'tecnico'
-            )
-            console.log(result.changes, resultUsers.changes)
+            console.log('antes del transaction')
+            await db.transactionAsync(async tx => {
+                console.log('antes de la consulta')
+                console.log('id es:', id)
 
-            if (result.changes > 0 && resultUsers.changes > 0) {
-                navigation.navigate('TecnicLayout', {id})
-                return
-            }
-            console.error('No se pudo registrar en autenticacion')
-            console.error('No se pudo registrar en usaurios')
+                const count = await tx.executeSqlAsync("SELECT COUNT(*) FROM autenticacion WHERE email = ?", [email]);
+                console.log('despues de la consulta',count)
+
+                if (count.rows[0]["COUNT(*)"] > 0) {
+                    Toast.show({
+                        type: 'error',
+                        text1: 'Error',
+                        text2: 'Email ya existente',
+                        text1Style: { fontSize: 18 },
+                        text2Style: { fontSize: 15 },
+                    })
+                    return
+                }
+
+                const insertAuth = await tx.executeSqlAsync("INSERT INTO autenticacion (id, email, password, creacion) VALUES (?,?,?,?)", [id, email.trim(), password.trim(), new Date().toString()])
+
+                const insertUsers = await tx.executeSqlAsync("INSERT INTO usuarios (id, apellido, creacion, email,  nombre, rol) VALUES (?,?,?,?,?,?)", [id, lastname.trim(), new Date().toString(), email.trim(), name.trim(), 'tecnico'])
+
+                const info = await tx.executeSqlAsync("SELECT * FROM usuarios;")
+                console.log('info de usuarios', info.rows)
+
+                console.log('inserts', insertAuth, insertUsers)
+                
+                if (insertAuth.rowsAffected > 0 && insertUsers.rowsAffected > 0) navigation.navigate('Inicio', { id_user: id })
+            })
+            // console.error('No se pudo registrar en autenticacion')
+            // console.error('No se pudo registrar en usaurios')
         } catch (error) {
             console.error(error)
         }
@@ -120,7 +115,7 @@ const Register = () => {
 
     return (
         <View style={{ flex: 1, paddingVertical: 40, paddingHorizontal: 20 }}>
-            <IconButton icon='keyboard-backspace' onPress={() => navigation.goBack()}/>
+            <IconButton icon='keyboard-backspace' onPress={() => navigation.goBack()} />
             <Text variant='titleLarge' style={{ textAlign: 'center' }}>Registro de tecnico</Text>
             <View style={{ flex: 1, justifyContent: 'center', alignContent: 'center', gap: 20 }}>
                 <TextInput label="Nombre" value={name} onChangeText={text => setName(text.trim())} autoFocus />

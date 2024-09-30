@@ -21,7 +21,7 @@
     "axios": "^1.7.4",
     "babel-plugin-module-resolver": "^5.0.2",
     "debounce": "^2.1.1",
-    "expo": "~51.0.34",
+    "expo": "51.0.28",
     "expo-build-properties": "~0.12.5",
     "expo-drizzle-studio-plugin": "^0.0.2",
     "expo-sqlite": "~14.0.6",

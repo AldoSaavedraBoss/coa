@@ -31,7 +31,6 @@ const StatesCalendar = ({ clients, dates }: StateCalendarProps) => {
 
 
   useEffect(() => {
-    console.log('RENDERIZADO')
     if (clients.length > 0) setCalendar(createClientObjects(clients))
   }, [clients])
 

@@ -1,0 +1,14 @@
+import { ReactNode } from "react";
+import { View } from "react-native"
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const SafeView = ({children}: {children: ReactNode}) => {
+    const insets = useSafeAreaInsets()
+    return (
+        <View style={{ paddingTop: insets.top, paddingBottom: insets.bottom, flex: 1 }}>
+            {children}
+        </View>
+    )
+}
+
+export default SafeView

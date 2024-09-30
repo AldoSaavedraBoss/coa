@@ -5,11 +5,11 @@ import axios from 'axios'
 import { useNavigation } from '@react-navigation/native'
 import { saveUserData, getUserData, clearUserData } from '../../storage/auth'
 import { AuthProps2 } from '../../interfaces/user'
-import { useSQLiteContext } from 'expo-sqlite'
+import db, {createTables} from '../../SQLite/createTables'
 import Toast from 'react-native-toast-message'
 
 const Login = () => {
-    const db = useSQLiteContext()
+    // const db = useSQLiteContext()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
@@ -18,6 +18,7 @@ const Login = () => {
 
     useEffect(() => {
         // checkAuthStatus()
+        createTables()
     }, []);
 
     const verifyToken = async (token: string) => {
@@ -79,31 +80,24 @@ const Login = () => {
             //     return
             // }
             // if (result.email === email && result.password === password) {
-            const result: { "COUNT(*)": number, id: string } | null = await db.getFirstAsync("SELECT COUNT(*), id from autenticacion WHERE email = ? AND password = ?", email, password)
-            if (result !== null && result['COUNT(*)'] > 0) {
-                // const userInfo = await db.getFirstAsync('SELECT * FROM usuarios WHERE id = ?', result.id)
-                // await saveUserData({
-                //     uid: userInfo.id,
-                //     refreshToken: '',
-                //     token: '',
-                //     data: {
-                //         apellidos: userInfo.apellido,
-                //         creacion: userInfo.creacion,
-                //         email: userInfo.email,
-                //         nombre: userInfo.nombre,
-                //         rol: 'tecnico'
-                //     }
-                // })
-                navigation.navigate('TecnicLayout', {id: result.id})
-            } else {
-                Toast.show({
-                    type: "error",
-                    text1: 'Error al iniciar sesión',
-                    text2: 'Usuario y/o contraseña incorrecta',
-                    text1Style: { fontSize: 18 },
-                    text2Style: { fontSize: 15 },
-                })
-            }
+            await db.transactionAsync(async tx => {
+                const result = await tx.executeSqlAsync("SELECT COUNT(*), id from autenticacion WHERE email = ? AND password = ?", [email, password])
+                console.log('login count',result)
+                const id_user: number = result.rows[0].id
+                if (result.rows[0]['COUNT(*)'] > 0) {
+                    navigation.navigate('Inicio', { id_user })
+                } else {
+                    Toast.show({
+                        type: "error",
+                        text1: 'Error al iniciar sesión',
+                        text2: 'Usuario y/o contraseña incorrecta',
+                        text1Style: { fontSize: 18 },
+                        text2Style: { fontSize: 15 },
+                    })
+                }
+            }, true)
+
+
         } catch (error) {
             console.error(error)
         } finally {
@@ -155,7 +149,7 @@ const Login = () => {
                 }
             </KeyboardAvoidingView>
             <View style={styles.bottomButtonContainer}>
-                <Button mode='contained' style={{marginHorizontal: 'auto'}} onPress={handleRegister} >Registrate</Button>
+                <Button mode='contained' style={{ marginHorizontal: 'auto' }} onPress={handleRegister} >Registrate</Button>
             </View>
             <Toast position='bottom' />
         </View>

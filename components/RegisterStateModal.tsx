@@ -5,7 +5,7 @@ import { FlatList, View, StyleSheet } from 'react-native'
 import { Dropdown } from 'react-native-element-dropdown';
 import Toast from 'react-native-toast-message';
 import axios from 'axios';
-import { useSQLiteContext } from 'expo-sqlite';
+import db from '../SQLite/createTables'
 
 interface FeaturesModalProps {
     visible: boolean,
@@ -22,7 +22,6 @@ interface NewGardenData {
 }
 
 const RegisterStateModal = ({ visible, setVisible, clients, getToastData }: FeaturesModalProps) => {
-    const db = useSQLiteContext()
     const [newGardenStatus, setNewGardenStatus] = useState<NewGardenData[]>([])
 
     const states = [
@@ -61,35 +60,88 @@ const RegisterStateModal = ({ visible, setVisible, clients, getToastData }: Feat
 
     const handleSendData = async () => {
         console.log('entro')
-        try {
 
+        db.transaction(tx => {
             for (let i = 0; i < clients.length; i++) {
                 for (let x = 0; x < newGardenStatus.length; x++) {
                     if (clients[i].id === newGardenStatus[x].id) {
-                        const parsed = JSON.parse(clients[i].historial_estados_huertos)
+                        // Parsear historial de estados de huertos y agregar nuevo estado
+                        const parsed = JSON.parse(clients[i].historial_estados_huertos);
                         parsed.push({
                             atributos: newGardenStatus[x].attributes,
                             estado: newGardenStatus[x].state,
                             fecha: newGardenStatus[x].date
-                        })
-                        const seriallized = JSON.stringify(parsed)
-                        const result = await db.runAsync('UPDATE usuarios SET historial_estados_huertos = ? WHERE id = ?', seriallized, clients[i].id)
-                        const toastObj: ToastData = {
-                            type: 'success',
-                            text1: 'Ok',
-                            text2: 'Los estados se ha registrado exitosamente',
-                            text1Style: { fontSize: 18 },
-                            text2Style: { fontSize: 15 },
-                        }
-                        getToastData(toastObj)
-                        didUnmount()
+                        });
+                        const serialized = JSON.stringify(parsed);
+
+                        // Ejecutar la actualización en la base de datos
+                        tx.executeSql(
+                            'UPDATE usuarios SET historial_estados_huertos = ? WHERE id = ?',
+                            [serialized, clients[i].id],
+                            (tr, res) => {
+                                if (res.rowsAffected > 0) {
+                                    // Mostrar mensaje de éxito si la actualización fue exitosa
+                                    const toastObj: ToastData = {
+                                        type: 'success',
+                                        text1: 'Ok',
+                                        text2: 'Los estados se han registrado exitosamente',
+                                        text1Style: { fontSize: 18 },
+                                        text2Style: { fontSize: 15 },
+                                    };
+                                    getToastData(toastObj);
+                                }
+                            },
+                            (tr, error) => {
+                                console.error('Error al actualizar historial de estados:', error);
+                                Toast.show({
+                                    type: 'error',
+                                    text1: 'Error',
+                                    text2: 'Hubo un error al registrar los estados',
+                                    text1Style: { fontSize: 18 },
+                                    text2Style: { fontSize: 15 },
+                                })
+                            }
+                        );
+
+                        // Finaliza el loop interno si se encontró una coincidencia
                         break;
                     }
                 }
             }
-        } catch (error) {
-            console.log(error)
-        }
+
+            // Llamar didUnmount después de la transacción completa
+            didUnmount();
+        });
+
+        // try {
+
+        //     for (let i = 0; i < clients.length; i++) {
+        //         for (let x = 0; x < newGardenStatus.length; x++) {
+        //             if (clients[i].id === newGardenStatus[x].id) {
+        //                 const parsed = JSON.parse(clients[i].historial_estados_huertos)
+        //                 parsed.push({
+        //                     atributos: newGardenStatus[x].attributes,
+        //                     estado: newGardenStatus[x].state,
+        //                     fecha: newGardenStatus[x].date
+        //                 })
+        //                 const seriallized = JSON.stringify(parsed)
+        //                 const result = await db.runAsync('UPDATE usuarios SET historial_estados_huertos = ? WHERE id = ?', seriallized, clients[i].id)
+        //                 const toastObj: ToastData = {
+        //                     type: 'success',
+        //                     text1: 'Ok',
+        //                     text2: 'Los estados se ha registrado exitosamente',
+        //                     text1Style: { fontSize: 18 },
+        //                     text2Style: { fontSize: 15 },
+        //                 }
+        //                 getToastData(toastObj)
+        //                 didUnmount()
+        //                 break;
+        //             }
+        //         }
+        //     }
+        // } catch (error) {
+        //     console.log(error)
+        // }
         // try {
         //     const response = await axios.post('http://192.168.0.18:3000/tech/registrar/estados', newGardenStatus)
         //     if (response.status === 200) {
@@ -175,6 +227,7 @@ const RegisterStateModal = ({ visible, setVisible, clients, getToastData }: Feat
                     )
                 }
                 <Button icon='playlist-edit' mode='contained' onPress={handleSendData} style={{ width: 160, marginHorizontal: 'auto', marginVertical: 40 }}>Registrar</Button>
+                <Toast position='bottom' />
             </Modal>
         </Portal>
     )

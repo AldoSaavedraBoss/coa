@@ -2,9 +2,8 @@ import { View, Text } from 'react-native'
 import { useState, useEffect } from 'react'
 import { Button, IconButton, Modal, Portal, TextInput } from 'react-native-paper'
 import axios from 'axios'
-import NetInfo from '@react-native-community/netinfo';
 import { ClientProps, ToastData } from '../interfaces/user'
-import { useSQLiteContext } from 'expo-sqlite';
+import db from '../SQLite/createTables'
 import Toast from 'react-native-toast-message'
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
@@ -18,7 +17,6 @@ interface NewClientModalProps {
 }
 
 const NewClientModal = ({ visible, setVisible, techId, getNewClient, getToastData }: NewClientModalProps) => {
-    const db = useSQLiteContext()
     const [name, setName] = useState('')
     const [lastname, setLastname] = useState('')
     const [email, setEmail] = useState('')
@@ -68,42 +66,45 @@ const NewClientModal = ({ visible, setVisible, techId, getNewClient, getToastDat
             return
         }
 
-        const state = await NetInfo.fetch()
-        if (state.isConnected) {
-            const uuid = uuidv4();
+        const uuid = uuidv4();
 
-            const newClient: ClientProps = {
-                id: uuid,
-                tecnico_id: techId || '',
-                email: email,
-                apellido: lastname,
-                rol: 'cliente',
-                creacion: new Date().toString(),
-                nombre: name,
-            }
+        const newClient: ClientProps = {
+            id: uuid,
+            tecnico_id: techId || '',
+            email: email,
+            apellido: lastname,
+            rol: 'cliente',
+            creacion: new Date().toString(),
+            nombre: name,
+            historial_estados_huertos: '[]'
+        }
 
-            try {
-                const result = await db.runAsync('INSERT INTO usuarios (id, apellido, creacion, email, nombre, tecnico_id, historial_estados_huertos) VALUES (?,?,?,?,?,?,?)', uuid, lastname, new Date().toString(), email, name, techId || '', JSON.stringify([]))
-                console.log(result.changes)
-                getNewClient(newClient)
-                getToastData({
-                    type: "success",
-                    text1: 'Ok',
-                    text2: 'El cliente se ha agregado exitosamente',
-                    text1Style: { fontSize: 18 },
-                    text2Style: { fontSize: 15 },
-                })
-                onClose()
-            } catch (error) {
-                console.log('Error al crear usuario en sqlite', error)
-                Toast.show({
-                    type: "error",
-                    text1: 'Error',
-                    text2: 'Algo salio mal al agregar el cliente',
-                    text1Style: { fontSize: 18 },
-                    text2Style: { fontSize: 15 },
-                })
-            }
+        try {
+            await db.transactionAsync(async tx => {
+                const result = await tx.executeSqlAsync("INSERT INTO usuarios (id, apellido, creacion, email, nombre, tecnico_id, historial_estados_huertos) VALUES (?,?,?,?,?,?,?)", [uuid, lastname, new Date().toString(), email, name, techId || '', JSON.stringify([])])
+
+                if(result.rowsAffected > 0) {
+                    getToastData({
+                        type: "success",
+                        text1: 'Ok',
+                        text2: 'El cliente se ha agregado exitosamente',
+                        text1Style: { fontSize: 18 },
+                        text2Style: { fontSize: 15 },
+                    })
+                    getNewClient(newClient)
+                }
+            })
+            
+            onClose()
+        } catch (error) {
+            console.log('Error al crear usuario en sqlite', error)
+            Toast.show({
+                type: "error",
+                text1: 'Error',
+                text2: 'Algo salio mal al agregar el cliente',
+                text1Style: { fontSize: 18 },
+                text2Style: { fontSize: 15 },
+            })
         }
 
         // try {
