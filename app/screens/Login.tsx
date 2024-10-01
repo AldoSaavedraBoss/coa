@@ -5,7 +5,7 @@ import axios from 'axios'
 import { useNavigation } from '@react-navigation/native'
 import { saveUserData, getUserData, clearUserData } from '../../storage/auth'
 import { AuthProps2 } from '../../interfaces/user'
-import db, {createTables} from '../../SQLite/createTables'
+import db, { createTables } from '../../SQLite/createTables'
 import Toast from 'react-native-toast-message'
 
 const Login = () => {
@@ -82,7 +82,7 @@ const Login = () => {
             // if (result.email === email && result.password === password) {
             await db.transactionAsync(async tx => {
                 const result = await tx.executeSqlAsync("SELECT COUNT(*), id from autenticacion WHERE email = ? AND password = ?", [email, password])
-                console.log('login count',result)
+                console.log('login count', result)
                 const id_user: number = result.rows[0].id
                 if (result.rows[0]['COUNT(*)'] > 0) {
                     navigation.navigate('Inicio', { id_user })
@@ -141,8 +141,20 @@ const Login = () => {
     return (
         <View style={styles.container}>
             <KeyboardAvoidingView behavior='padding' style={{ gap: 12, flex: 1, justifyContent: 'center' }}>
-                <TextInput value={email} style={styles.input} placeholder='Correo' autoCapitalize='none' onChangeText={(text) => setEmail(text)}></TextInput>
-                <TextInput secureTextEntry={true} value={password} style={styles.input} placeholder='Contraseña' autoCapitalize='none' onChangeText={(text) => setPassword(text)}></TextInput>
+                <TextInput
+                    value={email}
+                    style={styles.input}
+                    placeholder='Correo'
+                    autoCapitalize='none'
+                    keyboardType='email-address'
+                    onChangeText={(text) => setEmail(text)}></TextInput>
+                <TextInput
+                    secureTextEntry={true}
+                    value={password}
+                    style={styles.input}
+                    placeholder='Contraseña'
+                    autoCapitalize='none'
+                    onChangeText={(text) => setPassword(text)}></TextInput>
                 {
                     loading ? <ActivityIndicator size="large" color="#0000ff" /> :
                         <Button mode='elevated' onPress={signIn} style={{ width: 200, marginHorizontal: 'auto' }} >Iniciar</Button>

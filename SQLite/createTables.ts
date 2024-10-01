@@ -6,16 +6,26 @@ export const createTables = async () => {
   // PRAGMA journal_mode = WAL;
   try {
     await db.transactionAsync(async tx => {
+      // await tx.executeSqlAsync("DROP TABLE citas")
+      // await tx.executeSqlAsync("DROP TABLE usuarios")
+
+      // await tx.executeSqlAsync("DROP TABLE huertos")
+
+      // await tx.executeSqlAsync("DROP TABLE reportes")
+
+      // await tx.executeSqlAsync("DROP TABLE autenticacion")
+
+      
 
       await tx.executeSqlAsync("CREATE TABLE IF NOT EXISTS citas (id TEXT PRIMARY KEY,cliente_id TEXT,fecha TEXT,huerto_id TEXT,tecnico_id TEXT,nombre TEXT,apellido TEXT,sync INTEGER DEFAULT 0);");
 
       await tx.executeSqlAsync("CREATE TABLE IF NOT EXISTS usuarios ( id TEXT PRIMARY KEY, apellido TEXT, creacion TEXT, email TEXT NOT NULL, nombre TEXT, rol TEXT DEFAULT 'cliente', tecnico_id TEXT, historial_estados_huertos TEXT, sync INTEGER DEFAULT 0);");
 
-      await tx.executeSqlAsync("CREATE TABLE IF NOT EXISTS huertos (id TEXT PRIMARY KEY,caracteristicas TEXT, fertilizaciones_pendientes TEXT historial_estados TEXT historial_fertilizantes TEXT,nombre TEXT,recomendaciones TEXT,cliente_id TEXT NOT NULL,sync INTEGER DEFAULT 0);");
+      await tx.executeSqlAsync("CREATE TABLE IF NOT EXISTS huertos (id TEXT PRIMARY KEY,caracteristicas TEXT, fertilizaciones_pendientes TEXT, historial_estados TEXT, historial_fertilizantes TEXT,nombre TEXT,recomendaciones TEXT,cliente_id TEXT NOT NULL,sync INTEGER DEFAULT 0);");
 
       await tx.executeSqlAsync("CREATE TABLE IF NOT EXISTS reportes ( id TEXT PRIMARY KEY, agricultor_id TEXT NOT NULL, estado_general TEXT, etapa_fenologica TEXT, fecha TEXT, huerto_id TEXT, nombre TEXT, nombre_huerto TEXT, enfermedades TEXT, observaciones TEXT, plagas TEXT, recomendaciones TEXT, sync INTEGER DEFAULT 0);");
 
-      await tx.executeSqlAsync("CREATE TABLE IF NOT EXISTS estados_huerto ( id TEXT PRIMARY KEY, estado TEXT, color TEXT);")
+      // await tx.executeSqlAsync("CREATE TABLE IF NOT EXISTS estados_huerto ( id TEXT PRIMARY KEY, estado TEXT, color TEXT);")
 
       await tx.executeSqlAsync("CREATE TABLE IF NOT EXISTS autenticacion ( id TEXT PRIMARY KEY, email TEXT NOT NULL, password TEXT NOT NULL, creacion TEXT);")
       console.log('Tablas creadas correctamente')

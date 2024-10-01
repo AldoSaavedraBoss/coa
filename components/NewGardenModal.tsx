@@ -3,7 +3,8 @@ import { Portal, Modal, IconButton, Button, TextInput, Text } from 'react-native
 import React, { useEffect, useState } from 'react'
 import Toast from 'react-native-toast-message'
 import { ClientProps, GardenProps, ToastData } from '../interfaces/user'
-import { useSQLiteContext } from 'expo-sqlite'
+import db from '../SQLite/createTables'
+import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import { Dropdown } from 'react-native-element-dropdown'
 
@@ -16,7 +17,6 @@ interface AddGardenModalProps {
 }
 
 const NewGardenModal = ({ visible, setVisible, client, getToastData, getNewGarden }: AddGardenModalProps) => {
-    const db = useSQLiteContext()
     const [form, setForm] = useState({
         cliente_id: client.id,
         caracteristica: '',
@@ -27,24 +27,29 @@ const NewGardenModal = ({ visible, setVisible, client, getToastData, getNewGarde
         }],
         nombre: ''
     })
-    const [states, setStates] = useState<{ estado: string, id: string, color: string }[]>([])
 
     const addNewGarden = async () => {
         const arrFeature = [{ [form.caracteristica]: form.valor_caracteristica }]
         try {
             const uuid = uuidv4()
-            const result = await db.runAsync('INSERT INTO huertos (id, caracteristicas, fertilizaciones_pendientes, historial_estados, historial_fertilizantes, nombre, recomendaciones, cliente_id) VALUES (?,?,?,?,?,?,?,?)', uuid, JSON.stringify(arrFeature), JSON.stringify([]), JSON.stringify(form.historial_estados), JSON.stringify([]), form.nombre, JSON.stringify([]), form.cliente_id)
-            console.log('Se registro el huerto en sqlite', result.changes)
-            getToastData({
-                type: "success",
-                text1: 'Ok',
-                text2: 'El huerto se ha agregado exitosamente',
-                text1Style: { fontSize: 18 },
-                text2Style: { fontSize: 15 },
-            })
-            const garden: GardenProps | null = await db.getFirstAsync("SELECT * FROM huertos ORDER BY id DESC LIMIT 1")
-            console.log(garden)
-            if (garden !== null) getNewGarden(garden)
+            const result = await db.execAsync([{ sql: "INSERT INTO huertos (id, caracteristicas, fertilizaciones_pendientes, historial_estados, historial_fertilizantes, nombre, recomendaciones, cliente_id) VALUES (?,?,?,?,?,?,?,?)", args: [uuid, JSON.stringify(arrFeature), JSON.stringify([]), JSON.stringify(form.historial_estados), JSON.stringify([]), form.nombre, JSON.stringify([]), form.cliente_id] }], false)
+
+            console.log('Se registro el huerto en sqlite', result[0] ) 
+            if(result[0]?.rowsAffected > 0) {
+                {
+                    getToastData({
+                        type: "success",
+                        text1: 'Ok',
+                        text2: 'El huerto se ha agregado exitosamente',
+                        text1Style: { fontSize: 18 },
+                        text2Style: { fontSize: 15 },
+                    })
+                    const gardenResult = await db.execAsync([{sql: "SELECT * FROM huertos ORDER BY id DESC LIMIT 1", args: []}], true)
+                    console.log('devolucion nuevo huerto',gardenResult[0].rows)
+                    if (gardenResult[0].rows.length > 0 ) getNewGarden(gardenResult[0].rows[0])
+                }
+            }
+
         } catch (error) {
             console.error('Error al registrar huerto en sqlite', error)
             Toast.show({
@@ -57,18 +62,26 @@ const NewGardenModal = ({ visible, setVisible, client, getToastData, getNewGarde
         }
     }
 
-    useEffect(() => {
-        const getStatus = async () => {
-            const result: { estado: string, id: string, color: string }[] = await db.getAllAsync('SELECT * FROM estados_huerto;')
-            if (result !== null) setStates(result)
-        }
-        getStatus()
-    }, [])
+    // useEffect(() => {
+    //     const getStatus = async () => {
+    //         //{ estado: string, id: string, color: string }[] =
+    //         const result = await db.execAsync([{sql: "SELECT * FROM estados_huerto;", args: []}], true)
+    //         if (result[0].rows.lenght > 0) setStates(result[0].rows)
+    //     }
+    //     getStatus()
+    // }, [])
+
+    const states = [
+        { label: 'Todo bien', color: '#009929', value: 'todo bien' },
+        { label: 'Precaución', color: '#ebed17', value: 'precaucion' },
+        { label: 'Cuidado con plagas', color: '#efa229', value: 'cuidado con plagas' },
+        { label: 'Mal estado', color: '#e80729', value: 'mal estado' },
+    ]
 
     return (
         <Portal>
             <Modal visible={visible} onDismiss={() => setVisible(false)} style={{ backgroundColor: '#ffffff', paddingHorizontal: 10, paddingVertical: 40 }}>
-                <ScrollView style={{marginBottom: 50}}>
+                <ScrollView style={{ marginBottom: 50 }}>
                     <IconButton
                         icon="close"
                         iconColor='#777777'
@@ -95,18 +108,18 @@ const NewGardenModal = ({ visible, setVisible, client, getToastData, getNewGarde
                             value={form.nombre}
                             onChangeText={text => setForm(prev => ({ ...prev, nombre: text }))}
                         />
-                        <View style={{gap: 10, flexDirection: 'row'}}>
+                        <View style={{ gap: 10, flexDirection: 'row' }}>
                             <TextInput
                                 label='Agregar Caracteristica'
                                 value={form.caracteristica}
                                 onChangeText={text => setForm(prev => ({ ...prev, caracteristica: text.trim() }))}
-                                style={{flex: 1}}
+                                style={{ flex: 1 }}
                             />
                             <TextInput
                                 label='Agregar Valor'
                                 value={form.valor_caracteristica}
                                 onChangeText={text => setForm(prev => ({ ...prev, valor_caracteristica: text.trim() }))}
-                                style={{flex: 1}}
+                                style={{ flex: 1 }}
                             />
                         </View>
 
@@ -114,26 +127,26 @@ const NewGardenModal = ({ visible, setVisible, client, getToastData, getNewGarde
                             data={states}
                             style={styles.dropdown}
                             placeholderStyle={styles.placeholderStyle}
-                            labelField={'estado'}
-                            valueField='estado'
+                            labelField={'label'}
+                            valueField='value'
                             value={states[0]}
                             placeholder="Estado general de huerto"
                             onChange={item => setForm(prev => {
                                 const aux = { ...prev }
-                                aux.historial_estados[0].estado = item.estado
+                                aux.historial_estados[0].estado = item.value
                                 return aux
                             })}
                             renderItem={(item) => {
                                 return (<View style={styles.item}>
                                     <View style={{ backgroundColor: item.color, width: 20, height: 20 }}></View>
-                                    <Text style={styles.textItem}>{item.estado}</Text>
+                                    <Text style={styles.textItem}>{item.label}</Text>
                                 </View>)
                             }}
                         />
                     </View>
                 </ScrollView>
 
-                <Button mode='contained' style={{marginHorizontal: 'auto', width: 200}} onPress={addNewGarden}>Agregar huerto</Button>
+                <Button mode='contained' style={{ marginHorizontal: 'auto', width: 200 }} onPress={addNewGarden}>Agregar huerto</Button>
                 <Toast position='bottom' />
                 <Toast position='bottom' />
             </Modal>

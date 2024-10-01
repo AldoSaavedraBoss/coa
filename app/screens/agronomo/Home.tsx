@@ -20,7 +20,6 @@ type HomeState = 'profile' | 'producers'
 
 const Home = ({ route, navigation }: { route: any, navigation: any }) => {
     const { id_user } = route.params || '';
-    console.log(id_user)
 
     const [tab, setTab] = useState<HomeState>('profile')
     const [user, setUser] = useState<AuthProps2>({
@@ -72,25 +71,32 @@ const Home = ({ route, navigation }: { route: any, navigation: any }) => {
 
         const getData = async () => {
             try {
-                await db.transactionAsync(async tx => {
-                    const result = await tx.executeSqlAsync("SELECT * from usuarios WHERE id = ?", [id_user])
-                    console.log('user', result.rows)
-                    if (result.rows.length === 1) {
-                        setUser(result.rows[0] as AuthProps2)
-                    }
+                const result = await db.execAsync([{ sql: "SELECT * from usuarios WHERE id = ?", args: [id_user] }], true)
+
+                if (result[0].rows.length === 1) {
+                    setUser(result[0]?.rows[0] as AuthProps2);
+                    getClients(id_user)
+                    getDates(id_user)
+                }
+                // await db.transactionAsync(async tx => {
+                //     const result = await tx.executeSqlAsync(, [id_user])
+                //     console.log('user', result.rows)
+                //     if (result.rows.length === 1) {
+                //         setUser(result.rows[0] as AuthProps2)
+                //     }
 
 
-                    const resultClients = await tx.executeSqlAsync("SELECT * FROM usuarios WHERE tecnico_id = ?", [id_user])
-                    // console.log('usuarios', resultClients.rows)
-                    if (resultClients.rows.length > 0) setClients(resultClients.rows as ClientProps[])
+                //     const resultClients = await tx.executeSqlAsync("SELECT * FROM usuarios WHERE tecnico_id = ?", [id_user])
+                //     // console.log('usuarios', resultClients.rows)
+                //     if (resultClients.rows.length > 0) setClients(resultClients.rows as ClientProps[])
 
 
-                    const resultDates = await tx.executeSqlAsync("SELECT * FROM citas WHERE tecnico_id= ?", [id_user])
-                    // console.log('citas', resultDates.rows)
-                    if (resultDates.rows.length > 0) setDates(resultDates.rows as DatesData[])
+                //     const resultDates = await tx.executeSqlAsync("SELECT * FROM citas WHERE tecnico_id= ?", [id_user])
+                //     // console.log('citas', resultDates.rows)
+                //     if (resultDates.rows.length > 0) setDates(resultDates.rows as DatesData[])
                     setLoading(false)
 
-                }, true)
+                // }, true)
             } catch (error) {
                 console.error(error)
             }
@@ -125,14 +131,20 @@ const Home = ({ route, navigation }: { route: any, navigation: any }) => {
     }, [])
 
     const getClients = async (id: string) => {
-        console.log('id clientes', id)
+        
         try {
-            await db.transactionAsync(async tx => {
-                console.log('antes')
-                const result = await tx.executeSqlAsync("SELECT * FROM usuarios WHERE tecnico_id = ?", [id])
-                console.log('clientes deben der muchos', result)
-                if (result.rows.length > 0) setClients(result.rows as ClientProps[])
-            })
+            const result = await db.execAsync([{ sql: "SELECT * FROM usuarios WHERE tecnico_id = ?", args: [id] }], true)
+        console.log('clientes', result[0].rows)
+        if(result[0]?.rows?.length > 0) {
+            console.log('mas de uno')
+            setClients(result[0].rows as ClientProps[])
+        }
+            // await db.transactionAsync(async tx => {
+            //     console.log('antes')
+            //     const result = await tx.executeSqlAsync("SELECT * FROM usuarios WHERE tecnico_id = ?", [id])
+            //     console.log('clientes deben der muchos', result)
+            //     if (result.rows.length > 0) setClients(result.rows as ClientProps[])
+            // })
         } catch (error) {
             console.error(error)
             Toast.show({
@@ -144,13 +156,15 @@ const Home = ({ route, navigation }: { route: any, navigation: any }) => {
     }
 
     const getDates = async (id: string) => {
-        console.log('id citas', id)
         try {
-            await db.transactionAsync(async tx => {
-                const result = await tx.executeSqlAsync("SELECT * FROM citas WHERE tecnico_id= ?", [id])
-                console.log('citas deben ser muchos', result)
-                if (result.rows.length > 0) setDates(result.rows as DatesData[])
-            })
+            const result = await db.execAsync([{sql: "SELECT * FROM citas WHERE tecnico_id= ?", args: [id]}], true)
+            console.log('citas', result)
+            if(result[0].rows.length > 0) setDates(result[0].rows as DatesData[])
+            // await db.transactionAsync(async tx => {
+            //     const result = await tx.executeSqlAsync("SELECT * FROM citas WHERE tecnico_id= ?", [id])
+            //     console.log('citas deben ser muchos', result)
+            //     if (result.rows.length > 0) setDates(result.rows as DatesData[])
+            // })
         } catch (error) {
             console.error(error)
             Toast.show({
@@ -310,10 +324,10 @@ const Home = ({ route, navigation }: { route: any, navigation: any }) => {
                     )
                 }
                 {/* modal for looking garden state */}
-                {/* <RegisterStateModal visible={registerStateModal} setVisible={setRegisterStateModal} clients={clients} getToastData={getToastData} /> */}
+                <RegisterStateModal visible={registerStateModal} setVisible={setRegisterStateModal} clients={clients} getToastData={getToastData} />
                 {/* Modal for loking new client modal */}
-                {/* <NewClientModal visible={newClientModal} setVisible={setNewClientModal} techId={user.id} getNewClient={getNewClient} getToastData={getToastData} />
-                <DatesModal visible={showDatesModal} setVisible={setShowDatesModal} clients={clients} getToastData={getToastData} tecnico_id={user.id} /> */}
+                <NewClientModal visible={newClientModal} setVisible={setNewClientModal} techId={user.id} getNewClient={getNewClient} getToastData={getToastData} />
+                <DatesModal visible={showDatesModal} setVisible={setShowDatesModal} clients={clients} getToastData={getToastData} tecnico_id={user.id} />
                 <Toast position='bottom' />
             </View>
         </SafeView>

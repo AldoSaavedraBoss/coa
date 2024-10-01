@@ -13,6 +13,7 @@ interface StateCalendarProps {
 }
 
 const StatesCalendar = ({ clients, dates }: StateCalendarProps) => {
+  console.log('clientes desde la tabla', clients)
   const [numberOfItemsPerPageList] = useState([5, 10, 25]);
   const [itemsPerPage, setItemsPerPage] = useState(
     numberOfItemsPerPageList[0]

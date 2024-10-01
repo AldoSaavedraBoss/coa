@@ -135,30 +135,32 @@ const DatesModal = ({ visible, setVisible, clients, getToastData, tecnico_id }: 
         }
         try {
             const id = uuidv4()
-            db.transaction(tx => {
-                tx.executeSql("INSERT INTO citas (id, cliente_id, fecha, huerto_id, tecnico_id, nombre, apellido) VALUES(?,?,?,?,?,?,?)", [id, form.clientId, form.date.toString(), form.gardenId, form.tecnicoId, form.name, form.lastname], (tr, res) => {
-                    console.log('insertar cita', res.rowsAffected)
-                    if (res.rowsAffected > 0) {
-                        getToastData({
-                            text1: 'OK',
-                            text2: 'La cita se ha agendado con exito',
-                            text1Style: { fontSize: 18 },
-                            text2Style: { fontSize: 15 },
-                            type: 'success'
-                        })
-                        setVisible(false)
-                    }
-                }, (tr, error) => {
-                    console.error('Error al agendar cita', error)
-                    getToastData({
-                        type: "error",
-                        text1: 'Error',
-                        text2: 'Algo salio mal al agendar la cita',
-                        text1Style: { fontSize: 18 },
-                        text2Style: { fontSize: 15 }
-                    })
-                })
-            })
+            const result = await db.execAsync([{sql: "INSERT INTO citas (id, cliente_id, fecha, huerto_id, tecnico_id, nombre, apellido) VALUES(?,?,?,?,?,?,?)", args: [id, form.clientId, form.date.toString(), form.gardenId, form.tecnicoId, form.name, form.lastname]}], false)
+            console.log('resultado insercion citas', result)
+            // db.transaction(tx => {
+            //     tx.executeSql("INSERT INTO citas (id, cliente_id, fecha, huerto_id, tecnico_id, nombre, apellido) VALUES(?,?,?,?,?,?,?)", [id, form.clientId, form.date.toString(), form.gardenId, form.tecnicoId, form.name, form.lastname], (tr, res) => {
+            //         console.log('insertar cita', res.rowsAffected)
+            //         if (res.rowsAffected > 0) {
+            //             getToastData({
+            //                 text1: 'OK',
+            //                 text2: 'La cita se ha agendado con exito',
+            //                 text1Style: { fontSize: 18 },
+            //                 text2Style: { fontSize: 15 },
+            //                 type: 'success'
+            //             })
+            //             setVisible(false)
+            //         }
+            //     }, (tr, error) => {
+            //         console.error('Error al agendar cita', error)
+            //         getToastData({
+            //             type: "error",
+            //             text1: 'Error',
+            //             text2: 'Algo salio mal al agendar la cita',
+            //             text1Style: { fontSize: 18 },
+            //             text2Style: { fontSize: 15 }
+            //         })
+            //     })
+            // })
 
         } catch (error) {
 

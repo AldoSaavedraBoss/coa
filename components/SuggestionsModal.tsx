@@ -3,7 +3,7 @@ import { View, ScrollView, BackHandler } from 'react-native'
 import Toast from 'react-native-toast-message';
 import { IconButton, Button, TextInput, Modal, Portal } from 'react-native-paper'
 import axios from 'axios';
-import { useSQLiteContext } from 'expo-sqlite';
+import db from '../SQLite/createTables';
 import { GardenProps } from '../interfaces/user';
 
 interface SuggestionsModalProps {
@@ -14,7 +14,7 @@ interface SuggestionsModalProps {
 }
 
 const SuggestionsModal = ({ visible, setVisible, garden, getSuggestions }: SuggestionsModalProps) => {
-    const db = useSQLiteContext()
+
     const [generalSuggestions, setGeneralSuggestions] = useState([''])
 
     const addSuggestionField = () => {
@@ -36,9 +36,10 @@ const SuggestionsModal = ({ visible, setVisible, garden, getSuggestions }: Sugge
         const addSuggestions = garden.recomendaciones.concat(newSuggestions)
         console.log('adds',addSuggestions, JSON.stringify(addSuggestions))
         try {
-
-            const result = await db.runAsync('UPDATE huertos SET recomendaciones = ? WHERE id = ?', JSON.stringify(addSuggestions), garden.id)
-            if (result.changes > 0) {
+            console.log('id huerto', garden.id)
+            const result = await db.execAsync([{sql: "UPDATE huertos SET recomendaciones = ? WHERE id = ?", args: [JSON.stringify(addSuggestions), garden.id]}], false)
+            console.log('actualizar huertos',result[0])
+            if (result[0]?.rowsAffected > 0) {
                 setGeneralSuggestions([''])
                 getSuggestions(addSuggestions)
                 Toast.show({

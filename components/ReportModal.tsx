@@ -6,7 +6,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Dropdown } from "react-native-element-dropdown";
 import axios from "axios";
 import Toast from 'react-native-toast-message';
-import { useSQLiteContext } from "expo-sqlite";
+import db from "../SQLite/createTables";
+import 'react-native-get-random-values';
 import { v4 as uuidv4 } from "uuid";
 
 interface ReportModalProps {
@@ -42,8 +43,6 @@ interface FormFields {
 }
 
 const ReportModal = ({ visible, setVisible, garden, client, data, setData }: ReportModalProps) => {
-    const db = useSQLiteContext()
-    console.log('plagasss', data?.plagas)
     const [form, setForm] = useState<FormFields>({
         nombre: data?.nombre ?? `${client.nombre} ${client.apellido}`,
         huerto: data?.nombre_huerto ?? garden?.nombre ?? '',
@@ -187,9 +186,9 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
         }
         try {
             const id = uuidv4()
-            const result = await db.runAsync('INSERT INTO reportes (id, agricultor_id, estado_general,  etapa_fenologica, fecha,  huerto_id, nombre, nombre_huerto, enfermedades, observaciones, plagas, recomendaciones) VALUES (?,?,?,?,?,?,?,?,?,?,?,?);', id, report.agricultor_id, report.estado_general, report.etapa_fenologica, new Date().toString(), report.huerto_id, report.nombre, report.nombre_huerto, JSON.stringify(report.enfermedades), JSON.stringify(report.observaciones), JSON.stringify(report.plagas), JSON.stringify(report.recomendaciones))
+            const result = await db.execAsync([{ sql: "INSERT INTO reportes (id, agricultor_id, estado_general,  etapa_fenologica, fecha,  huerto_id, nombre, nombre_huerto, enfermedades, observaciones, plagas, recomendaciones) VALUES (?,?,?,?,?,?,?,?,?,?,?,?);", args: [id, report.agricultor_id, report.estado_general, report.etapa_fenologica, new Date().toString(), report.huerto_id, report.nombre, report.nombre_huerto, JSON.stringify(report.enfermedades), JSON.stringify(report.observaciones), JSON.stringify(report.plagas), JSON.stringify(report.recomendaciones)] }], false)
 
-            if (result.changes > 0) {
+            if (result[0]?.rowsAffected > 0) {
                 Toast.show({
                     type: 'success',
                     text1: 'Ok',
@@ -253,9 +252,9 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
             nombre_huerto: form.huerto
         }
         try {
-            const result = await db.runSync('UPDATE reportes SET agricultor_id = ?, estado_general = ?, etapa_fenologica = ?, fecha = ?, huerto_id = ?, nombre = ?, nombre_huerto = ?, enfermedades = ?, observaciones = ?, plagas = ?, reomendaciones = ? WHERE id = ?', report.agricultor_id, report.estado_general, report.etapa_fenologica, new Date().toString(), report.huerto_id, report.nombre, report.nombre_huerto, JSON.stringify(report.enfermedades), JSON.stringify(report.observaciones), JSON.stringify(report.plagas), JSON.stringify(report.recomendaciones), data?.id || '')
+            const result = await db.execAsync([{ sql: "UPDATE reportes SET agricultor_id = ?, estado_general = ?, etapa_fenologica = ?, fecha = ?, huerto_id = ?, nombre = ?, nombre_huerto = ?, enfermedades = ?, observaciones = ?, plagas = ?, reomendaciones = ? WHERE id = ?", args: [report.agricultor_id, report.estado_general, report.etapa_fenologica, new Date().toString(), report.huerto_id, report.nombre, report.nombre_huerto, JSON.stringify(report.enfermedades), JSON.stringify(report.observaciones), JSON.stringify(report.plagas), JSON.stringify(report.recomendaciones), data?.id || ''] }], false)
 
-            if (result.changes > 0) Toast.show({
+            if (result[0]?.rowsAffected > 0) Toast.show({
                 type: 'success',
                 text1: 'Ok',
                 text2: 'El reporte se ha subido exitosamente',
@@ -270,7 +269,7 @@ const ReportModal = ({ visible, setVisible, garden, client, data, setData }: Rep
 
     return (
         <Portal>
-            
+
             <Modal style={{ flex: 1, backgroundColor: '#fff' }} visible={visible} onDismiss={didUnmount}>
                 <ScrollView style={{ paddingHorizontal: 10, paddingBottom: 20, marginTop: 10 }}>
                     <IconButton

@@ -8,7 +8,7 @@ import ReportModal from '../../../components/ReportModal';
 import Toast from 'react-native-toast-message';
 import { BarChart } from 'react-native-chart-kit';
 import axios from 'axios'
-import { useSQLiteContext } from 'expo-sqlite';
+import db from '../../../SQLite/createTables';
 import SuggestionsModal from '../../../components/SuggestionsModal';
 import FeaturesModal from '../../../components/FeaturesModal';
 import FertilizerModal from '../../../components/FertilizerModal';
@@ -23,7 +23,6 @@ type RootStackParamList = {
 type DetallesProps = NativeStackScreenProps<RootStackParamList, 'Detalles'>;
 
 const GardenDetail = ({ route }: DetallesProps) => {
-  const db = useSQLiteContext()
 
   const featuresToObject = (features: any) => {
     return features.map(characteristicObj => {
@@ -72,25 +71,25 @@ const GardenDetail = ({ route }: DetallesProps) => {
   //             </Card.Content>
   //           </Card>
 
-  useEffect(() => {
-    const getData = async () => {
-      try {
-        const result: AuthProps2 | null = await db.getFirstAsync('SELECT * from usuarios WHERE id = ?', id_user)
-        console.log('resultado', result.id, id_user)
-        if (result !== null && Object.keys(result).length) {
-          setUser(result);
-          getClients(result.id)
-          getDates(result.id)
-        }
-        // const data = await getUserData();
-        // setUser(data)
-      } catch (error) {
-        console.error('Al raer los datos del usuario en gardenDetail', error)
-      }
-    }
+  // useEffect(() => {
+  //   const getData = async () => {
+  //     try {
+  //       const result: AuthProps2 | null = await db.getFirstAsync('SELECT * from usuarios WHERE id = ?', id_user)
+  //       console.log('resultado', result.id, id_user)
+  //       if (result !== null && Object.keys(result).length) {
+  //         setUser(result);
+  //         getClients(result.id)
+  //         getDates(result.id)
+  //       }
+  //       // const data = await getUserData();
+  //       // setUser(data)
+  //     } catch (error) {
+  //       console.error('Al raer los datos del usuario en gardenDetail', error)
+  //     }
+  //   }
 
-    getData()
-  }, [])
+  //   getData()
+  // }, [])
 
 
 
@@ -104,8 +103,9 @@ const GardenDetail = ({ route }: DetallesProps) => {
     const newSuggestions = suggestions.filter(item => item !== suggestion)
     console.log(newSuggestions)
     try {
-      const result = await db.runAsync('UPDATE huertos SET recomendaciones = ? WHERE id = ?', JSON.stringify(newSuggestions), garden.id)
-      if (result.changes > 0) {
+      const result = await db.execAsync([{sql: "UPDATE huertos SET recomendaciones = ? WHERE id = ?", args: [JSON.stringify(newSuggestions), garden.id]}], false)
+      console.log('borrar sugerencias',result[0])
+      if (result[0].rowsAffected > 0) {
         setSuggestions(newSuggestions)
         Toast.show({
           type: "success",
@@ -154,7 +154,7 @@ const GardenDetail = ({ route }: DetallesProps) => {
 
   return (
     <ScrollView nestedScrollEnabled contentContainerStyle={{ flexGrow: 1 }} style={{ flex: 1, paddingHorizontal: 10 }}>
-      <Toast />
+      
       <Text variant='titleLarge' style={{ marginHorizontal: 'auto', marginBottom: 20 }}>Detalle e: {garden.nombre}</Text>
       <View style={{ marginHorizontal: 'auto', gap: 10 }}>
         <View style={{ flexDirection: 'row', gap: 10, height: 40 }}>
@@ -321,7 +321,7 @@ const GardenDetail = ({ route }: DetallesProps) => {
       {/* ----- Buttons ----- */}
       <View style={{ marginTop: 20 }}>
         {
-          user !== null && user.data.rol === 'tecnico' && tab === 'features' && (
+          user !== null && user.rol === 'tecnico' && tab === 'features' && (
             <View style={{ gap: 20 }}>
               <Button icon='pencil' mode='elevated' onPress={() => setFeaturesModal(true)}>Agregar caracteristicas</Button>
               <Button icon='book-edit' mode='elevated' onPress={() => setFeaturesModalEdit(true)}>Modificar caracteristicas</Button>
@@ -329,7 +329,7 @@ const GardenDetail = ({ route }: DetallesProps) => {
           )
         }
         {
-          user !== null && user.data.rol === 'tecnico' && tab === 'pests' && (
+          user !== null && user.rol === 'tecnico' && tab === 'pests' && (
             <View style={{ gap: 20 }}>
               <Button icon='plus' mode='elevated' onPress={() => setReport(true)} style={{ width: 200, marginHorizontal: 'auto' }}>Agregar reporte</Button>
             </View>
@@ -347,7 +347,8 @@ const GardenDetail = ({ route }: DetallesProps) => {
       <FeaturesModal visible={featuresModalEdit} setVisible={setFeaturesModalEdit} characteristics={characteristics} garden={garden} getFeatures={getFeatures} edit />
 
       {/* Fertilizer Modal */}
-      <FertilizerModal visible={fertilizerModal} setVisible={setFertilizerModal} garden={garden} />
+      {/* <FertilizerModal visible={fertilizerModal} setVisible={setFertilizerModal} garden={garden} /> */}
+      <Toast position='bottom' />
     </ScrollView>
   )
 }

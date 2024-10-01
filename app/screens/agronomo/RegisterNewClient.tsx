@@ -1,22 +1,19 @@
-import { View, Text } from 'react-native'
-import { useState, useEffect } from 'react'
-import { Button, IconButton, Modal, Portal, TextInput } from 'react-native-paper'
-import axios from 'axios'
-import { ClientProps, ToastData } from '../interfaces/user'
-import db from '../SQLite/createTables'
-import Toast from 'react-native-toast-message'
+import { useState } from "react"
+import { View } from "react-native"
+import { Button, TextInput } from "react-native-paper"
+import Toast from "react-native-toast-message"
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
+import db from '../../../SQLite/createTables'
+import { ClientProps } from "../../../interfaces/user";
 
-interface NewClientModalProps {
-    visible: boolean,
-    setVisible: React.Dispatch<React.SetStateAction<boolean>>
-    techId: string | undefined,
+interface NewClientProps {
+    route: any,
+    navigation: any
     getNewClient: (client: ClientProps) => void
-    getToastData: (obj: ToastData) => void
 }
 
-const NewClientModal = ({ visible, setVisible, techId, getNewClient, getToastData }: NewClientModalProps) => {
+const RegisterNewClient = ({ route, navigation, }: NewClientProps) => {
     const [name, setName] = useState('')
     const [lastname, setLastname] = useState('')
     const [email, setEmail] = useState('')
@@ -78,24 +75,22 @@ const NewClientModal = ({ visible, setVisible, techId, getNewClient, getToastDat
             nombre: name,
             historial_estados_huertos: '[]'
         }
-        try {
-            const result = await db.execAsync([{sql: "INSERT INTO usuarios (id, apellido, creacion, email, nombre, tecnico_id, historial_estados_huertos) VALUES (?,?,?,?,?,?,?)", args: [uuid, lastname, new Date().toString(), email, name, techId || '', JSON.stringify([])]}], false)
-            console.log('nuevo cliente', result)
-            // const result = await db.execAsync([{sql: "SELECT * FROM usuarios", args: []}], true)
-            // await db.transactionAsync(async tx => {
-            //     const result = await tx.executeSqlAsync("INSERT INTO usuarios (id, apellido, creacion, email, nombre, tecnico_id, historial_estados_huertos) VALUES (?,?,?,?,?,?,?)", [uuid, lastname, new Date().toString(), email, name, techId || '', JSON.stringify([])])
 
-                if(result[0]?.rowsAffected > 0) {
-                    getToastData({
-                        type: "success",
-                        text1: 'Ok',
-                        text2: 'El cliente se ha agregado exitosamente',
-                        text1Style: { fontSize: 18 },
-                        text2Style: { fontSize: 15 },
-                    })
+        try {
+            await db.transactionAsync(async tx => {
+                const result = await tx.executeSqlAsync("INSERT INTO usuarios (id, apellido, creacion, email, nombre, tecnico_id, historial_estados_huertos) VALUES (?,?,?,?,?,?,?)", [uuid, lastname, new Date().toString(), email, name, techId || '', JSON.stringify([])])
+
+                if(result.rowsAffected > 0) {
+                    // getToastData({
+                    //     type: "success",
+                    //     text1: 'Ok',
+                    //     text2: 'El cliente se ha agregado exitosamente',
+                    //     text1Style: { fontSize: 18 },
+                    //     text2Style: { fontSize: 15 },
+                    // })
                     getNewClient(newClient)
                 }
-            // })
+            })
             
             onClose()
         } catch (error) {
@@ -125,8 +120,8 @@ const NewClientModal = ({ visible, setVisible, techId, getNewClient, getToastDat
         //             text1Style: { fontSize: 18 },
         //             text2Style: { fontSize: 15 },
         //         })
-        //         getNewClient(response.data)
-        //         onClose()
+        //         // getNewClient(response.data)
+        //         // onClose()
         //     }
         // } catch (error) {
         //     console.error('Error al enviar cliente', error)
@@ -146,24 +141,16 @@ const NewClientModal = ({ visible, setVisible, techId, getNewClient, getToastDat
         return emailRegex.test(value)
 
     };
-
-    const onClose = () => {
-        setEmail('')
-        setLastname('')
-        setName('')
-        setVisible(false)
-    }
     return (
-        <Portal>
-            <Modal visible={visible} onDismiss={onClose} contentContainerStyle={{ backgroundColor: '#fff', gap: 20, padding: 20 }}>
-                <IconButton
+        <View>
+                {/* <IconButton
                     icon="close"
                     iconColor='#777777'
                     size={20}
                     style={{ marginLeft: 'auto' }}
                     containerColor="#dddddd"
                     onPress={onClose}
-                />
+                /> */}
                 <TextInput
                     label='Nombre(s)'
                     value={name}
@@ -184,9 +171,6 @@ const NewClientModal = ({ visible, setVisible, techId, getNewClient, getToastDat
 
                 <Button mode='contained' onPress={handleNewClient}>Agregar</Button>
                 <Toast position='bottom' />
-            </Modal>
-        </Portal>
+        </View>
     )
 }
-
-export default NewClientModal

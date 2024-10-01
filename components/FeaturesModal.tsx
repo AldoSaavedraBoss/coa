@@ -4,7 +4,8 @@ import { GardenFeatures, GardenProps } from '../interfaces/user'
 import { BackHandler, FlatList, View } from 'react-native'
 import axios from 'axios'
 import Toast from 'react-native-toast-message'
-import { useSQLiteContext } from 'expo-sqlite'
+import db from '../SQLite/createTables'
+import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid'
 
 interface FeaturesModalProps {
@@ -20,7 +21,6 @@ interface FeaturesModalProps {
 }
 
 const FeaturesModal = ({ visible, setVisible, characteristics, garden, edit = false, getFeatures }: FeaturesModalProps) => {
-    const db = useSQLiteContext()
     console.log('modal', characteristics)
     const [featuresState, setFeaturesState] = useState(characteristics)
     const [newFeature, setNewFeature] = useState({
@@ -58,7 +58,7 @@ const FeaturesModal = ({ visible, setVisible, characteristics, garden, edit = fa
     const postPutFeatures = async () => {
         if (!edit) {
             const checkRepeated = garden.caracteristicas.some(item => Object.keys(item).some(key => key === newFeature.key))
-            console.log('ckech',checkRepeated, garden.caracteristicas)
+            console.log('ckech', checkRepeated, garden.caracteristicas)
             if (!checkRepeated) garden.caracteristicas.push({ [newFeature.key]: newFeature.value })
             else {
                 Toast.show({
@@ -73,10 +73,11 @@ const FeaturesModal = ({ visible, setVisible, characteristics, garden, edit = fa
         }
 
         try {
-            const result = await db.runAsync('UPDATE huertos SET caracteristicas = ?;', JSON.stringify(garden.caracteristicas))
-            if (result.changes > 0) {
-                const gardenResponse = await db.getFirstAsync("SELECT caracteristicas FROM huertos WHERE id = ?", garden.id)
-                if (gardenResponse.caracteristicas !== undefined && gardenResponse.caracteristica !== null) getFeatures(JSON.parse(gardenResponse.caracteristicas))
+            const result = await db.execAsync([{ sql: "UPDATE huertos SET caracteristicas = ? WHERE id = ?;", args: [JSON.stringify(garden.caracteristicas), garden.id] }], false)
+            if (result[0]?.rowsAffected > 0) {
+                const gardenResponse = await db.execAsync([{ sql: "SELECT caracteristicas FROM huertos WHERE id = ?", args: [garden.id] }], true)
+                if (gardenResponse[0].rows.length > 0) {
+                    getFeatures(JSON.parse(gardenResponse[0].rows[0].caracteristicas))
                 Toast.show({
                     type: "success",
                     text1: 'Ok',
@@ -84,6 +85,7 @@ const FeaturesModal = ({ visible, setVisible, characteristics, garden, edit = fa
                     text1Style: { fontSize: 18 },
                     text2Style: { fontSize: 15 },
                 })
+                }
             }
         } catch (error) {
             console.error(error)

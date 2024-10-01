@@ -7,7 +7,7 @@ import { Text, Card, Button } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import ReportModal from '../../../components/ReportModal';
 import NewGardenModal from '../../../components/NewGardenModal';
-import { useSQLiteContext } from 'expo-sqlite';
+import db from '../../../SQLite/createTables';
 
 type RootStackParamList = {
   ClientDetail: { client: ClientProps }; // Define el tipo de `garden` si lo conoces
@@ -16,7 +16,6 @@ type RootStackParamList = {
 type DetallesProps = NativeStackScreenProps<RootStackParamList, 'ClientDetail'>;
 
 const ClientDetail = ({ route, navigation }: DetallesProps) => {
-  const db = useSQLiteContext()
   const { client } = route.params;
   const [loading, setLoading] = useState(true)
   const [gardens, setGardens] = useState<GardenProps[]>([])
@@ -29,9 +28,9 @@ const ClientDetail = ({ route, navigation }: DetallesProps) => {
   useEffect(() => {
     const getData = async () => {
       try {
-        const result: GardenProps[] = await db.getAllAsync("SELECT * FROM huertos WHERE cliente_id = ?", client.id)
-        if (result.length > 0) setGardens(() => {
-          const aux: GardenProps[] = result.map(garden => ({
+        const result = await db.execAsync([{sql: "SELECT * FROM huertos WHERE cliente_id = ?", args: [client.id]}], true)
+        if (result[0].rows.length > 0) setGardens(() => {
+          const aux: GardenProps[] = result[0].rows.map((garden: GardenProps) => ({
             ...garden,
             caracteristicas: JSON.parse(garden.caracteristicas),
             fertilizaciones_pendientes: JSON.parse(garden.fertilizaciones_pendientes),
@@ -62,10 +61,10 @@ const ClientDetail = ({ route, navigation }: DetallesProps) => {
 
   const getReportHistory = async () => {
     try {
-      const result: ReportProps[] = await db.getAllAsync('SELECT * FROM reportes WHERE agricultor_id = ?', client.id)
-      if (result.length > 0) {
+      const result = await db.execAsync([{sql: "SELECT * FROM reportes WHERE agricultor_id = ?", args: [client.id]}], true)
+      if (result[0].rows.length > 0) {
         setReportsList(() => {
-          return result.map(report => ({
+          return result[0].rows.map((report: any) => ({
             ...report,
             enfermedades: JSON.parse(report.enfermedades),
             observaciones: JSON.parse(report.observaciones),
