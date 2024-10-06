@@ -2,31 +2,38 @@ import React, { useEffect, useState } from 'react'
 import { Text, Pressable, View, StyleSheet } from 'react-native'
 import { Button } from 'react-native-paper';
 import { clearUserData, getUserData } from '../../../storage/auth';
-import { AuthProps, GardenProps } from '../../../interfaces/user';
+import { AuthProps2, GardenProps } from '../../../interfaces/user';
 import axios from 'axios';
 
 const Home = ({ navigation }) => {
-  const [user, setUser] = useState<null | AuthProps>(null)
+  const [user, setUser] = useState<AuthProps2>({
+    id: '',
+    apellido: '',
+    creacion: '',
+    email: '',
+    nombre: '',
+    rol: '',
+  })
   const [gardens, setGardens] = useState<GardenProps[]>([])
 
-  useEffect(() => {
-    const getData = async () => {
-      const data = await getUserData();
-      try {
-        const response = await axios.get(`http://192.168.0.18:3000/gardens/${data?.uid}`, {
-          headers: {
-            Authorization: `Berear ${data?.token}`
-          }
-        })
-        setGardens(response.data)
-      } catch (error) {
-        console.error('error al obtener huertos', error)
-      }
-      setUser(data)
-    }
+  // useEffect(() => {
+  //   const getData = async () => {
+  //     const data = await getUserData();
+  //     try {
+  //       const response = await axios.get(`http://192.168.0.18:3000/gardens/${data?.uid}`, {
+  //         headers: {
+  //           Authorization: `Berear ${data?.token}`
+  //         }
+  //       })
+  //       setGardens(response.data)
+  //     } catch (error) {
+  //       console.error('error al obtener huertos', error)
+  //     }
+  //     setUser(data)
+  //   }
 
-    getData()
-  }, [])
+  //   getData()
+  // }, [])
 
   const handlePress = (garden: GardenProps) => {
     navigation.navigate('Detalles', { garden });
@@ -52,7 +59,7 @@ const Home = ({ navigation }) => {
           gardens.map(garden => {
             return (
               <Pressable
-              key={garden.id}
+                key={garden.id}
                 onPress={() => {
                   handlePress(garden)
                 }}

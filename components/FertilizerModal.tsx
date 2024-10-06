@@ -116,7 +116,7 @@ const FertilizerModal = ({ visible, setVisible, garden }: FertilizerModalProps) 
                         <View style={{ flexDirection: 'row', alignItems: 'center', width: 170 }}>
                             <Text style={{ width: 80 }} variant='labelLarge'>Fecha: </Text>
                             <TextInput
-                                value={fertilization.date.toLocaleDateString()}
+                                value={fertilization.date.toString()}
                                 style={{ width: '100%' }}
                             />
                         </View>

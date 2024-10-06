@@ -2,15 +2,17 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, View, Dimensions, FlatList, } from 'react-native'
 import { Button, Card, Text, List, Icon, Divider, IconButton } from 'react-native-paper';
-import { AuthProps, ClientProps, GardenProps, ReportProps } from '../../../interfaces/user';
+import { AuthProps2, ClientProps, GardenProps, ReportProps } from '../../../interfaces/user';
 import { getUserData } from '../../../storage/auth';
 import ReportModal from '../../../components/ReportModal';
 import Toast from 'react-native-toast-message';
 import { BarChart } from 'react-native-chart-kit';
 import axios from 'axios'
+import db from '../../../SQLite/createTables';
 import SuggestionsModal from '../../../components/SuggestionsModal';
 import FeaturesModal from '../../../components/FeaturesModal';
 import FertilizerModal from '../../../components/FertilizerModal';
+import { err } from 'react-native-svg';
 
 type States = 'features' | 'suggestions' | 'nutrition' | 'pests'
 
@@ -21,21 +23,40 @@ type RootStackParamList = {
 type DetallesProps = NativeStackScreenProps<RootStackParamList, 'Detalles'>;
 
 const GardenDetail = ({ route }: DetallesProps) => {
+
+  const featuresToObject = (features: any) => {
+    return features.map(characteristicObj => {
+      return Object.entries(characteristicObj).map(([key, value]) => ({
+        key,
+        value
+      }))
+    }).flat()
+  }
+
   const { garden } = route.params;
   const { client } = route.params;
-  const [user, setUser] = useState<null | AuthProps>(null)
+  const [user, setUser] = useState<AuthProps2>({
+    id: '',
+    apellido: '',
+    creacion: '',
+    email: '',
+    nombre: '',
+    rol: '',
+  })
   const [tab, setTab] = useState<States>('suggestions');
   const [report, setReport] = useState(false)
-  const [suggestions, setSuggestions] = useState(garden.recomendaciones)
+  const [suggestions, setSuggestions] = useState<string[]>(garden.recomendaciones)
+  const [characteristics, setCharacteristics] = useState(featuresToObject(garden.caracteristicas))
   const [suggestionsModal, setSuggestionsModal] = useState(false)
   const [featuresModalEdit, setFeaturesModalEdit] = useState(false)
   const [featuresModal, setFeaturesModal] = useState(false)
   const [fertilizerModal, setFertilizerModal] = useState(false)
+  console.log(garden.caracteristicas)
 
-  const characteristics = Object.entries(garden.caracteristicas).map(([key, value]) => ({
-    key,
-    value
-  }))
+  // const characteristics = Object.entries(garden.caracteristicas).map(([key, value]) => ({
+  //   key,
+  //   value
+  // }))
 
   // <Card>
   //             <Card.Title title="Características" />
@@ -50,30 +71,42 @@ const GardenDetail = ({ route }: DetallesProps) => {
   //             </Card.Content>
   //           </Card>
 
-  useEffect(() => {
-    const getData = async () => {
-      const data = await getUserData();
-      setUser(data)
-    }
+  // useEffect(() => {
+  //   const getData = async () => {
+  //     try {
+  //       const result: AuthProps2 | null = await db.getFirstAsync('SELECT * from usuarios WHERE id = ?', id_user)
+  //       console.log('resultado', result.id, id_user)
+  //       if (result !== null && Object.keys(result).length) {
+  //         setUser(result);
+  //         getClients(result.id)
+  //         getDates(result.id)
+  //       }
+  //       // const data = await getUserData();
+  //       // setUser(data)
+  //     } catch (error) {
+  //       console.error('Al raer los datos del usuario en gardenDetail', error)
+  //     }
+  //   }
 
-    getData()
-  }, [])
+  //   getData()
+  // }, [])
+
+
 
   const toggleButton = (value: States) => {
     setTab(value)
   }
 
+
+
   const deleteSuggestion = async (suggestion: string) => {
-    console.log(garden.id)
+    const newSuggestions = suggestions.filter(item => item !== suggestion)
+    console.log(newSuggestions)
     try {
-      const response = await axios.delete('http://192.168.0.18:3000/tech/sugerencias', {
-        params: {
-          gardenId: garden.id,
-          suggestion: suggestion
-        }
-      })
-      if (response.status === 200) {
-        setSuggestions(response.data.suggestions)
+      const result = await db.execAsync([{sql: "UPDATE huertos SET recomendaciones = ? WHERE id = ?", args: [JSON.stringify(newSuggestions), garden.id]}], false)
+      console.log('borrar sugerencias',result[0])
+      if (result[0].rowsAffected > 0) {
+        setSuggestions(newSuggestions)
         Toast.show({
           type: "success",
           text1: 'Ok',
@@ -83,14 +116,46 @@ const GardenDetail = ({ route }: DetallesProps) => {
         })
       }
     } catch (error) {
-      console.error('Error al mandar la peticion delete de recomendaciones', error)
+      console.error(error)
     }
+    // try {
+    //   const response = await axios.delete('http://192.168.0.18:3000/tech/sugerencias', {
+    //     params: {
+    //       gardenId: garden.id,
+    //       suggestion: suggestion
+    //     }
+    //   })
+    //   if (response.status === 200) {
+    //     setSuggestions(response.data.suggestions)
+    //     Toast.show({
+    //       type: "success",
+    //       text1: 'Ok',
+    //       text2: 'Sugerencia elminada correctamente correctamente',
+    //       text1Style: { fontSize: 18 },
+    //       text2Style: { fontSize: 15 },
+    //     })
+    //   }
+    // } catch (error) {
+    //   console.error('Error al mandar la peticion delete de recomendaciones', error)
+    // }
+  }
+
+  const getSuggestions = (obj: string[]) => {
+    console.log('garden detail', suggestions, suggestions.concat(obj))
+    setSuggestions(obj)
+  }
+
+  const getFeatures = (obj: any) => {
+    setCharacteristics(() => {
+      console.log(featuresToObject(obj))
+      return featuresToObject(obj)
+    })
   }
 
   return (
     <ScrollView nestedScrollEnabled contentContainerStyle={{ flexGrow: 1 }} style={{ flex: 1, paddingHorizontal: 10 }}>
-      <Toast />
-      <Text variant='titleLarge' style={{ marginHorizontal: 'auto', marginBottom: 20 }}>Detalle de: {garden.nombre}</Text>
+      
+      <Text variant='titleLarge' style={{ marginHorizontal: 'auto', marginBottom: 20 }}>Detalle e: {garden.nombre}</Text>
       <View style={{ marginHorizontal: 'auto', gap: 10 }}>
         <View style={{ flexDirection: 'row', gap: 10, height: 40 }}>
           <Button mode="contained" onPress={() => toggleButton('features')} style={StyleSheet.compose(
@@ -128,10 +193,10 @@ const GardenDetail = ({ route }: DetallesProps) => {
           <Card style={{ marginTop: 20, paddingVertical: 20 }}>
             <Card.Title title="Características" />
             {
-              characteristics.map(item => {
+              characteristics.map((item, i) => {
                 return (
-                  <Card.Content key={item.key}>
-                    <Text style={{fontSize: 15}}><Text style={{ fontWeight: '700', textTransform: 'capitalize' }}>{item.key}</Text>: {item.value}</Text>
+                  <Card.Content key={`${item}-${i}`}>
+                    <Text style={{ fontSize: 15 }}><Text style={{ fontWeight: '700', textTransform: 'capitalize' }}>{item.key}</Text>: {item.value}</Text>
                   </Card.Content>
                 )
               })
@@ -148,7 +213,7 @@ const GardenDetail = ({ route }: DetallesProps) => {
                 {
                   suggestions.map((sug, i) => {
                     return (
-                      <View key={i}>
+                      <View key={`${sug}-${i}`}>
                         <View style={{ flexDirection: 'row', gap: 10 }}>
                           <Icon source={"check"} size={20}></Icon><Text style={{ flexShrink: 1, textAlign: 'left' }}>{sug}</Text>
                           <IconButton icon='delete' size={20} iconColor='#ffffff' containerColor='#e80729' style={{ marginLeft: 'auto' }} onPress={() => deleteSuggestion(sug)} />
@@ -234,17 +299,20 @@ const GardenDetail = ({ route }: DetallesProps) => {
                 renderItem={({ item }) => (
                   <View style={{ flexDirection: 'row' }}>
                     <Icon source="chevron-right" color='black' size={20} />
-                    <Text style={{ flexShrink: 1 }}><Text style={{ fontWeight: '600' }}>{new Date(item.fecha).toLocaleDateString()}</Text>, se aplicó <Text style={{ fontWeight: '600' }}>{item.cantidad}Kg</Text> de la formula <Text style={{fontWeight: '600'}}>{item.formula}</Text></Text>
+                    <Text style={{ flexShrink: 1 }}><Text style={{ fontWeight: '600' }}>{new Date(item.fecha).toLocaleDateString()}</Text>, se aplicó <Text style={{ fontWeight: '600' }}>{item.cantidad}Kg</Text> de la formula <Text style={{ fontWeight: '600' }}>{item.formula}</Text></Text>
                   </View>
                 )}
                 ListEmptyComponent={<Text variant='labelLarge'>No hay ningnua fertilización</Text>}
-                ListHeaderComponent={<Text style={{marginBottom: 10}} variant='titleMedium'>Fertilizantes</Text>}
+                ListHeaderComponent={<Text style={{ marginBottom: 10 }} variant='titleMedium'>Fertilizantes</Text>}
               />
-              <Text style={{ marginTop: 10 }}>Pendientes de aplicar: <Text>{garden.fertilizaciones_pendientes.map((item, i, arr) => (
-                <Text key={i}>
-                  <Text style={{fontWeight: 'bold'}}>{item}</Text>
-                  {i < arr.length - 1 ? ',' : ''}
-                </Text>))}</Text></Text>
+              {
+                garden.fertilizaciones_pendientes.length > 0 ? <Text style={{ marginTop: 10 }}>Pendientes de aplicar: <Text>{garden.fertilizaciones_pendientes.map((item, i, arr) => (
+                  <Text key={i}>
+                    <Text style={{ fontWeight: 'bold' }}>{item}</Text>
+                    {i < arr.length - 1 ? ',' : ''}
+                  </Text>))}</Text></Text>
+                  : <Text style={{ marginTop: 10 }}>No hay fertilizaciones pendientes</Text>
+              }
             </View>
             <Button icon='plus' mode='outlined' onPress={() => setFertilizerModal(true)} style={{ width: 250, marginHorizontal: 'auto', marginTop: 10 }}>Agregar fertilizante</Button>
           </View>
@@ -253,7 +321,7 @@ const GardenDetail = ({ route }: DetallesProps) => {
       {/* ----- Buttons ----- */}
       <View style={{ marginTop: 20 }}>
         {
-          user !== null && user.data.rol === 'tecnico' && tab === 'features' && (
+          user !== null && user.rol === 'tecnico' && tab === 'features' && (
             <View style={{ gap: 20 }}>
               <Button icon='pencil' mode='elevated' onPress={() => setFeaturesModal(true)}>Agregar caracteristicas</Button>
               <Button icon='book-edit' mode='elevated' onPress={() => setFeaturesModalEdit(true)}>Modificar caracteristicas</Button>
@@ -261,7 +329,7 @@ const GardenDetail = ({ route }: DetallesProps) => {
           )
         }
         {
-          user !== null && user.data.rol === 'tecnico' && tab === 'pests' && (
+          user !== null && user.rol === 'tecnico' && tab === 'pests' && (
             <View style={{ gap: 20 }}>
               <Button icon='plus' mode='elevated' onPress={() => setReport(true)} style={{ width: 200, marginHorizontal: 'auto' }}>Agregar reporte</Button>
             </View>
@@ -272,14 +340,15 @@ const GardenDetail = ({ route }: DetallesProps) => {
       <ReportModal visible={report} setVisible={setReport} client={client} garden={garden} />
 
       {/* Suggestion Modal */}
-      <SuggestionsModal visible={suggestionsModal} setVisible={setSuggestionsModal} garden={garden} />
+      <SuggestionsModal visible={suggestionsModal} setVisible={setSuggestionsModal} garden={garden} getSuggestions={getSuggestions} />
 
       {/* Features Modal */}
-      <FeaturesModal visible={featuresModal} setVisible={setFeaturesModal} characteristics={characteristics} garden_id={garden.id} />
-      <FeaturesModal visible={featuresModalEdit} setVisible={setFeaturesModalEdit} characteristics={characteristics} garden_id={garden.id} edit />
+      <FeaturesModal visible={featuresModal} setVisible={setFeaturesModal} characteristics={characteristics} garden={garden} getFeatures={getFeatures} />
+      <FeaturesModal visible={featuresModalEdit} setVisible={setFeaturesModalEdit} characteristics={characteristics} garden={garden} getFeatures={getFeatures} edit />
 
       {/* Fertilizer Modal */}
-      <FertilizerModal visible={fertilizerModal} setVisible={setFertilizerModal} garden={garden} />
+      {/* <FertilizerModal visible={fertilizerModal} setVisible={setFertilizerModal} garden={garden} /> */}
+      <Toast position='bottom' />
     </ScrollView>
   )
 }

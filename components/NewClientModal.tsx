@@ -1,18 +1,22 @@
 import { View, Text } from 'react-native'
-import React, { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button, IconButton, Modal, Portal, TextInput } from 'react-native-paper'
 import axios from 'axios'
-import { ClientProps } from '../interfaces/user'
+import { ClientProps, ToastData } from '../interfaces/user'
+import db from '../SQLite/createTables'
 import Toast from 'react-native-toast-message'
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
 
 interface NewClientModalProps {
     visible: boolean,
     setVisible: React.Dispatch<React.SetStateAction<boolean>>
     techId: string | undefined,
     getNewClient: (client: ClientProps) => void
+    getToastData: (obj: ToastData) => void
 }
 
-const NewClientModal = ({ visible, setVisible, techId, getNewClient }: NewClientModalProps) => {
+const NewClientModal = ({ visible, setVisible, techId, getNewClient, getToastData }: NewClientModalProps) => {
     const [name, setName] = useState('')
     const [lastname, setLastname] = useState('')
     const [email, setEmail] = useState('')
@@ -48,28 +52,54 @@ const NewClientModal = ({ visible, setVisible, techId, getNewClient }: NewClient
             })
             return
         }
-        
-        try {
-            const response = await axios.post('http://192.168.0.18:3000/tech/register/client/', {
-                name,
-                lastname,
-                email,
-                tecnicoId: techId
-            })
 
-            if (response.status === 200) {
-                Toast.show({
-                    type: 'success',
-                    text1: 'Ok',
-                    text2: 'El cliente se ha agregado exitosamente',
-                    text1Style: { fontSize: 18 },
-                    text2Style: { fontSize: 15 },
-                })
-                getNewClient(response.data)
-                onClose()
-            }
+        const isEmail = handleEmailChange
+
+        if (!isEmail) {
+            Toast.show({
+                type: "error",
+                text1: 'Error',
+                text2: 'Email no valido',
+                text1Style: { fontSize: 18 },
+                text2Style: { fontSize: 15 }
+            })
+            return
+        }
+
+        const uuid = uuidv4();
+
+        const newClient: ClientProps = {
+            id: uuid,
+            tecnico_id: techId || '',
+            email: email,
+            apellido: lastname,
+            rol: 'cliente',
+            creacion: new Date().toString(),
+            nombre: name,
+            historial_estados_huertos: '[]'
+        }
+        try {
+            const result = await db.execAsync([{sql: "INSERT INTO usuarios (id, apellido, creacion, email, nombre, tecnico_id, historial_estados_huertos) VALUES (?,?,?,?,?,?,?)", args: [uuid, lastname, new Date().toString(), email, name, techId || '', JSON.stringify([])]}], false)
+            console.log('nuevo cliente', result)
+            // const result = await db.execAsync([{sql: "SELECT * FROM usuarios", args: []}], true)
+            // await db.transactionAsync(async tx => {
+            //     const result = await tx.executeSqlAsync("INSERT INTO usuarios (id, apellido, creacion, email, nombre, tecnico_id, historial_estados_huertos) VALUES (?,?,?,?,?,?,?)", [uuid, lastname, new Date().toString(), email, name, techId || '', JSON.stringify([])])
+
+                if(result[0]?.rowsAffected > 0) {
+                    getToastData({
+                        type: "success",
+                        text1: 'Ok',
+                        text2: 'El cliente se ha agregado exitosamente',
+                        text1Style: { fontSize: 18 },
+                        text2Style: { fontSize: 15 },
+                    })
+                    getNewClient(newClient)
+                }
+            // })
+            
+            onClose()
         } catch (error) {
-            console.error('Error al enviar cliente', error)
+            console.log('Error al crear usuario en sqlite', error)
             Toast.show({
                 type: "error",
                 text1: 'Error',
@@ -78,7 +108,44 @@ const NewClientModal = ({ visible, setVisible, techId, getNewClient }: NewClient
                 text2Style: { fontSize: 15 },
             })
         }
+
+        // try {
+        //     const response = await axios.post('http://192.168.0.18:3000/tech/register/client/', {
+        //         name,
+        //         lastname,
+        //         email,
+        //         tecnicoId: techId
+        //     })
+
+        //     if (response.status === 200) {
+        //         Toast.show({
+        //             type: 'success',
+        //             text1: 'Ok',
+        //             text2: 'El cliente se ha agregado exitosamente',
+        //             text1Style: { fontSize: 18 },
+        //             text2Style: { fontSize: 15 },
+        //         })
+        //         getNewClient(response.data)
+        //         onClose()
+        //     }
+        // } catch (error) {
+        //     console.error('Error al enviar cliente', error)
+        //     Toast.show({
+        //         type: "error",
+        //         text1: 'Error',
+        //         text2: 'Algo salio mal al agregar el cliente',
+        //         text1Style: { fontSize: 18 },
+        //         text2Style: { fontSize: 15 },
+        //     })
+        // }
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const handleEmailChange = (value: string) => {
+        return emailRegex.test(value)
+
+    };
 
     const onClose = () => {
         setEmail('')
@@ -89,14 +156,14 @@ const NewClientModal = ({ visible, setVisible, techId, getNewClient }: NewClient
     return (
         <Portal>
             <Modal visible={visible} onDismiss={onClose} contentContainerStyle={{ backgroundColor: '#fff', gap: 20, padding: 20 }}>
-            <IconButton
-                        icon="close"
-                        iconColor='#777777'
-                        size={20}
-                        style={{ marginLeft: 'auto' }}
-                        containerColor="#dddddd"
-                        onPress={onClose}
-                    />
+                <IconButton
+                    icon="close"
+                    iconColor='#777777'
+                    size={20}
+                    style={{ marginLeft: 'auto' }}
+                    containerColor="#dddddd"
+                    onPress={onClose}
+                />
                 <TextInput
                     label='Nombre(s)'
                     value={name}
@@ -110,6 +177,8 @@ const NewClientModal = ({ visible, setVisible, techId, getNewClient }: NewClient
                 <TextInput
                     label='email'
                     value={email}
+                    keyboardType='email-address'
+                    autoCapitalize='none'
                     onChangeText={text => setEmail(text)}
                 />
 
