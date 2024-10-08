@@ -20,7 +20,6 @@ const Register = () => {
         if (!isValid) return
         const id = uuidv4()
         try {
-            console.log('antes del transaction')
             await db.transactionAsync(async tx => {
                 console.log('antes de la consulta')
                 console.log('id es:', id)
@@ -39,16 +38,16 @@ const Register = () => {
                     return
                 }
 
-                const insertAuth = await tx.executeSqlAsync("INSERT INTO autenticacion (id, email, password, creacion) VALUES (?,?,?,?)", [id, email.trim(), password.trim(), new Date().toString()])
+                // const insertAuth = await tx.executeSqlAsync("INSERT INTO autenticacion (id, email, password, creacion) VALUES (?,?,?,?)", [id, email.trim(), password.trim(), new Date().toString()])
 
-                const insertUsers = await tx.executeSqlAsync("INSERT INTO usuarios (id, apellido, creacion, email,  nombre, rol) VALUES (?,?,?,?,?,?)", [id, lastname.trim(), new Date().toString(), email.trim(), name.trim(), 'tecnico'])
+                // const insertUsers = await tx.executeSqlAsync("INSERT INTO usuarios (id, apellido, creacion, email,  nombre, rol) VALUES (?,?,?,?,?,?)", [id, lastname.trim(), new Date().toString(), email.trim(), name.trim(), 'tecnico'])
 
-                const info = await tx.executeSqlAsync("SELECT * FROM usuarios;")
-                console.log('info de usuarios', info.rows)
+                // const info = await tx.executeSqlAsync("SELECT * FROM usuarios;")
+                // console.log('info de usuarios', info.rows)
 
-                console.log('inserts', insertAuth, insertUsers)
+                // console.log('inserts', insertAuth, insertUsers)
                 
-                if (insertAuth.rowsAffected > 0 && insertUsers.rowsAffected > 0) navigation.navigate('Inicio', { id_user: id })
+                // if (insertAuth.rowsAffected > 0 && insertUsers.rowsAffected > 0) navigation.navigate('Inicio', { id_user: id })
             })
             // console.error('No se pudo registrar en autenticacion')
             // console.error('No se pudo registrar en usaurios')

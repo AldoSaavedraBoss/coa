@@ -7,12 +7,14 @@ import { saveUserData, getUserData, clearUserData } from '../../storage/auth'
 import { AuthProps2 } from '../../interfaces/user'
 import db, { createTables } from '../../SQLite/createTables'
 import Toast from 'react-native-toast-message'
+import ResetPasswordModal from '../../components/ResetPassword'
 
 const Login = () => {
     // const db = useSQLiteContext()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
+    const [visibleResetPass, setVisibleResetPass] = useState(false)
 
     const navigation = useNavigation()
 
@@ -159,11 +161,13 @@ const Login = () => {
                     loading ? <ActivityIndicator size="large" color="#0000ff" /> :
                         <Button mode='elevated' onPress={signIn} style={{ width: 200, marginHorizontal: 'auto' }} >Iniciar</Button>
                 }
+                <Button mode='text' onPress={() => setVisibleResetPass(true)}>Olvide mi contraseña</Button>
             </KeyboardAvoidingView>
             <View style={styles.bottomButtonContainer}>
                 <Button mode='contained' style={{ marginHorizontal: 'auto' }} onPress={handleRegister} >Registrate</Button>
             </View>
             <Toast position='bottom' />
+            <ResetPasswordModal visible={visibleResetPass} setVisible={setVisibleResetPass}/>
         </View>
     )
 }
