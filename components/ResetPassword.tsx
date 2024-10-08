@@ -36,9 +36,27 @@ const ResetPasswordModal = ({ visible, setVisible }: ResetPassModalProps) => {
                 })
                 return
             }
-            const insert = await db.execAsync([{sql: "insert into usuarios"}])
+            const insert = await db.execAsync([{sql: "update autenticacion set password = ? where email = ?", args: [password, email]}], false)
+            console.log(insert[0])
+
+            if(insert[0]?.rowsAffected > 0) Toast.show({
+                type: 'success',
+                text1: 'Listo',
+                text2: 'Contraseña cambiada',
+                text1Style: { fontSize: 18 },
+                text2Style: { fontSize: 15 },
+            })
+            // const result2 = await db.execAsync([{sql: "select * from autenticacion where email = ?", args: [email]}], true)
+            // console.log(result2[0])
         } catch (error) {
-            
+            console.error(error)
+            Toast.show({
+                type: 'error',
+                text1: 'Ha ocurrido un error',
+                text2: 'al tratar de cambiar la contraseña',
+                text1Style: { fontSize: 18 },
+                text2Style: { fontSize: 15 },
+            })
         }
     }
 

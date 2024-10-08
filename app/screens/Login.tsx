@@ -84,6 +84,8 @@ const Login = () => {
             // if (result.email === email && result.password === password) {
             await db.transactionAsync(async tx => {
                 const result = await tx.executeSqlAsync("SELECT COUNT(*), id from autenticacion WHERE email = ? AND password = ?", [email, password])
+                // const result2 = await tx.executeSqlAsync("SELECT * from autenticacion", [])
+                // console.log('resultado2', result2.rows)
                 console.log('login count', result)
                 const id_user: number = result.rows[0].id
                 if (result.rows[0]['COUNT(*)'] > 0) {
