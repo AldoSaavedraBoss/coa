@@ -118,7 +118,7 @@ const ClientDetail = ({ route, navigation }: DetallesProps) => {
           <FlatList
             data={gardens}
             style={{ marginHorizontal: 'auto', flex: 1 }}
-            keyExtractor={client => client.id}
+            keyExtractor={garden => garden.id}
             renderItem={({ item }) => {
               return (
                 <Pressable
@@ -139,7 +139,7 @@ const ClientDetail = ({ route, navigation }: DetallesProps) => {
         ) : null
       }
 
-      <View style={{ marginHorizontal: 'auto', gap: 12 }}>
+      <View style={{ marginHorizontal: 'auto', gap: 12, marginTop: 10 }}>
         <Button icon='account-plus' mode='contained' onPress={() => setNewGardenModal(true)} style={{ width: 200 }}>Agregar nuevo huerto</Button>
         <Button icon='format-list-bulleted' mode='contained' onPress={getReportHistory} style={{ width: 200, marginBottom: 40 }}>Ver historial de reportes</Button>
       </View>

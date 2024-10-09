@@ -7,6 +7,8 @@ import db from '../SQLite/createTables'
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import { Dropdown } from 'react-native-element-dropdown'
+import { Formik } from 'formik'
+import * as Yup from 'yup'
 
 interface AddGardenModalProps {
     visible: boolean,
@@ -16,26 +18,62 @@ interface AddGardenModalProps {
     getNewGarden: (garden: GardenProps) => void
 }
 
-const NewGardenModal = ({ visible, setVisible, client, getToastData, getNewGarden }: AddGardenModalProps) => {
-    const [form, setForm] = useState({
-        cliente_id: client.id,
-        caracteristica: '',
-        valor_caracteristica: '',
-        historial_estados: [{
-            estado: '',
-            fecha: new Date()
-        }],
-        nombre: ''
-    })
+const validationSchema = Yup.object().shape({
+    cliente_id: Yup.string().required('No existe el productor'),
+    superficie: Yup.string().required('Falta definir la superficie'),
+    edad: Yup.string().required('Falta definir la edad'),
+    ubicacion: Yup.string().required('Falta definir la ubicación'),
+    asnm: Yup.string().required('Falta definir el ASNM'),
+    densidad_poblacion: Yup.string().required('Falta definir la densidad'),
+    marco_plantacion: Yup.string().required('Falta definir el marco de plantación'),
+    variedad: Yup.string().required('Falta definir la variedad'),
+    sistema: Yup.string().required('Falta definir el sistema de riego'),
+    sugerencia: Yup.string(),
+    estado_inicial: Yup.object().shape({
+        estado: Yup.string().required('Falta definir el estado'),
+        fecha: Yup.date().required('Falta fecha').typeError('No es una fecha valida')
+    }),
+    nombre: Yup.string().required('Falta nombre del huerto')
+})
 
-    const addNewGarden = async () => {
-        const arrFeature = [{ [form.caracteristica]: form.valor_caracteristica }]
+const NewGardenModal = ({ visible, setVisible, client, getToastData, getNewGarden }: AddGardenModalProps) => {
+    // const [form, setForm] = useState()
+
+    const addNewGarden = async (values: {
+        cliente_id: string,
+        superficie: string,
+        edad: string,
+        ubicacion: string,
+        asnm: string,
+        densidad_poblacion: string,
+        marco_plantacion: string,
+        variedad: string,
+        sistema: string,
+        sugerencia: string,
+        estado_inicial: {
+            estado: string,
+            fecha: Date
+        },
+        nombre: string
+    }) => {
+        const features = [
+            { nombre: values.nombre },
+            { superficie: values.superficie },
+            { eda: values.edad },
+            { ubicacion: values.ubicacion },
+            { asnm: values.asnm },
+            { densidad_poblacion: values.densidad_poblacion },
+            { marco_plantacion: values.marco_plantacion },
+            { variedad: values.variedad },
+            { sistema: values.sistema },
+        ]
+        const suggestion = values.sugerencia !== '' ? [values.sugerencia] : []
         try {
             const uuid = uuidv4()
-            const result = await db.execAsync([{ sql: "INSERT INTO huertos (id, caracteristicas, fertilizaciones_pendientes, historial_estados, historial_fertilizantes, nombre, recomendaciones, cliente_id) VALUES (?,?,?,?,?,?,?,?)", args: [uuid, JSON.stringify(arrFeature), JSON.stringify([]), JSON.stringify(form.historial_estados), JSON.stringify([]), form.nombre, JSON.stringify([]), form.cliente_id] }], false)
+            const result = await db.execAsync([{ sql: "INSERT INTO huertos (id, caracteristicas, fertilizaciones_pendientes, historial_estados, historial_fertilizantes, nombre, recomendaciones, cliente_id) VALUES (?,?,?,?,?,?,?,?)", args: [uuid, JSON.stringify(features), JSON.stringify([]), JSON.stringify(values.estado_inicial), JSON.stringify([]), values.nombre, JSON.stringify(suggestion), values.cliente_id] }], false)
 
-            console.log('Se registro el huerto en sqlite', result[0] ) 
-            if(result[0]?.rowsAffected > 0) {
+            console.log('Se registro el huerto en sqlite', result[0])
+            if (result[0]?.rowsAffected > 0) {
                 {
                     getToastData({
                         type: "success",
@@ -44,9 +82,9 @@ const NewGardenModal = ({ visible, setVisible, client, getToastData, getNewGarde
                         text1Style: { fontSize: 18 },
                         text2Style: { fontSize: 15 },
                     })
-                    const gardenResult = await db.execAsync([{sql: "SELECT * FROM huertos ORDER BY id DESC LIMIT 1", args: []}], true)
-                    console.log('devolucion nuevo huerto',gardenResult[0].rows)
-                    if (gardenResult[0].rows.length > 0 ) getNewGarden(gardenResult[0].rows[0])
+                    const gardenResult = await db.execAsync([{sql: 'select * from huertos where id = ?', args: [uuid]}], true)
+                    console.log('devolucion nuevo huerto', gardenResult[0].rows)
+                    if (gardenResult[0].rows.length > 0) getNewGarden(gardenResult[0].rows[0])
                 }
             }
 
@@ -78,6 +116,11 @@ const NewGardenModal = ({ visible, setVisible, client, getToastData, getNewGarde
         { label: 'Mal estado', color: '#e80729', value: 'mal estado' },
     ]
 
+    const irrigationSystem = [
+        { label: 'Riego', value: 'riego' },
+        { label: 'Temporal', value: 'temporal' },
+    ]
+
     return (
         <Portal>
             <Modal visible={visible} onDismiss={() => setVisible(false)} style={{ backgroundColor: '#ffffff', paddingHorizontal: 10, paddingVertical: 40 }}>
@@ -88,65 +131,152 @@ const NewGardenModal = ({ visible, setVisible, client, getToastData, getNewGarde
                         size={20}
                         style={{ marginLeft: 'auto' }}
                         containerColor="#dddddd"
-                        onPress={() => {
-                            setVisible(false)
-                            setForm({
-                                cliente_id: client.id,
-                                caracteristica: '',
-                                valor_caracteristica: '',
-                                historial_estados: [{
-                                    estado: '',
-                                    fecha: new Date()
-                                }],
-                                nombre: ''
-                            })
-                        }}
+                        onPress={() => setVisible(false)}
                     />
-                    <View style={{ gap: 10 }}>
-                        <TextInput
-                            label='Nombre del huerto'
-                            value={form.nombre}
-                            onChangeText={text => setForm(prev => ({ ...prev, nombre: text }))}
-                        />
-                        <View style={{ gap: 10, flexDirection: 'row' }}>
-                            <TextInput
-                                label='Agregar Caracteristica'
-                                value={form.caracteristica}
-                                onChangeText={text => setForm(prev => ({ ...prev, caracteristica: text.trim() }))}
-                                style={{ flex: 1 }}
-                            />
-                            <TextInput
-                                label='Agregar Valor'
-                                value={form.valor_caracteristica}
-                                onChangeText={text => setForm(prev => ({ ...prev, valor_caracteristica: text.trim() }))}
-                                style={{ flex: 1 }}
-                            />
-                        </View>
+                    <Text variant='labelLarge' style={{ marginBottom: 10, color: '#909090' }}>Los campos con * son obligatorios</Text>
+                    <Formik
+                        initialValues={{
+                            cliente_id: client.id,
+                            superficie: '',
+                            edad: '',
+                            ubicacion: '',
+                            asnm: '',
+                            densidad_poblacion: '',
+                            marco_plantacion: '',
+                            variedad: '',
+                            sistema: '',
+                            sugerencia: '',
+                            estado_inicial: {
+                                estado: '',
+                                fecha: new Date()
+                            },
+                            nombre: ''
+                        }}
+                        validationSchema={validationSchema}
+                        onSubmit={addNewGarden}
+                    >
+                        {({ handleSubmit, values, handleChange, errors, setFieldValue }) => (
+                            <View style={{ gap: 10 }}>
 
-                        <Dropdown
-                            data={states}
-                            style={styles.dropdown}
-                            placeholderStyle={styles.placeholderStyle}
-                            labelField={'label'}
-                            valueField='value'
-                            value={states[0]}
-                            placeholder="Estado general de huerto"
-                            onChange={item => setForm(prev => {
-                                const aux = { ...prev }
-                                aux.historial_estados[0].estado = item.value
-                                return aux
-                            })}
-                            renderItem={(item) => {
-                                return (<View style={styles.item}>
-                                    <View style={{ backgroundColor: item.color, width: 20, height: 20 }}></View>
-                                    <Text style={styles.textItem}>{item.label}</Text>
-                                </View>)
-                            }}
-                        />
-                    </View>
+                                <View>
+                                    <TextInput
+                                        label='Nombre del huerto*'
+                                        value={values.nombre}
+                                        onChangeText={handleChange('nombre')}
+                                    />
+                                    {errors.nombre && <Text variant='labelMedium' style={{ color: 'red' }}>{errors.nombre}</Text>}
+                                </View>
+                                <View>
+                                    <TextInput
+                                        label={'Superficie (Hectáreas)*'}
+                                        value={values.superficie}
+                                        onChangeText={handleChange('superficie')}
+                                    />
+                                    {errors.superficie && <Text variant='labelMedium' style={{ color: 'red' }}>{errors.superficie}</Text>}
+                                </View>
+                                <View>
+                                    <TextInput
+                                        label={'Edad*'}
+                                        value={String(values.edad)}
+                                        onChangeText={text => setFieldValue('edad', text)}
+                                        keyboardType='number-pad'
+                                    />
+                                    {errors.edad && <Text variant='labelMedium' style={{ color: 'red' }}>{errors.edad}</Text>}
+                                </View>
+                                <View>
+                                    <TextInput
+                                        label={'Ubicación*'}
+                                        value={values.ubicacion}
+                                        onChangeText={handleChange('ubicacion')}
+                                    />
+                                    {errors.ubicacion && <Text variant='labelMedium' style={{ color: 'red' }}>{errors.ubicacion}</Text>}
+                                </View>
+                                <View>
+                                    <TextInput
+                                        label={'ASNM (metros)*'}
+                                        value={values.asnm}
+                                        onChangeText={handleChange('asnm')}
+                                    />
+                                    {errors.asnm && <Text variant='labelMedium' style={{ color: 'red' }}>{errors.asnm}</Text>}
+                                </View>
+                                <View>
+                                    <TextInput
+                                        label={'Densidad de población (por hectárea)*'}
+                                        value={values.densidad_poblacion}
+                                        onChangeText={handleChange('densidad_poblacion')}
+                                    />
+                                    {errors.densidad_poblacion && <Text variant='labelMedium' style={{ color: 'red' }}>{errors.densidad_poblacion}</Text>}
+                                </View>
+                                <View>
+                                    <TextInput
+                                        label={'Marco de plantación*'}
+                                        value={values.marco_plantacion}
+                                        onChangeText={handleChange('marco_plantacion')}
+                                    />
+                                    {errors.marco_plantacion && <Text variant='labelMedium' style={{ color: 'red' }}>{errors.marco_plantacion}</Text>}
+                                </View>
+                                <View>
+                                    <TextInput
+                                        label={'Variedad*'}
+                                        value={values.variedad}
+                                        onChangeText={handleChange('variedad')}
+                                    />
+                                    {errors.variedad && <Text variant='labelMedium' style={{ color: 'red' }}>{errors.variedad}</Text>}
+                                </View>
+                                <View>
+                                    <TextInput
+                                        label={'Sugerencia'}
+                                        value={values.sugerencia}
+                                        onChangeText={handleChange('sugerencia')}
+                                    />
+                                    {errors.sugerencia && <Text variant='labelMedium' style={{ color: 'red' }}>{errors.sugerencia}</Text>}
+                                </View>
+
+                                <View>
+                                    <Dropdown
+                                        data={irrigationSystem}
+                                        style={styles.dropdown}
+                                        placeholderStyle={styles.placeholderStyle}
+                                        labelField='label'
+                                        valueField='value'
+                                        value={values.sistema}
+                                        placeholder="Sistema de riego"
+                                        onChange={item => setFieldValue('sistema', item.value)}
+                                        renderItem={(item) => {
+                                            return (
+                                                <View style={styles.item}>
+                                                    <Text style={styles.textItem}>{item.label}</Text>
+                                                </View>
+                                            )
+                                        }}
+                                    />
+                                    {errors.sistema && <Text variant='labelMedium' style={{ color: 'red' }}>{errors.sistema}</Text>}
+                                </View>
+
+                                <Dropdown
+                                    data={states}
+                                    style={styles.dropdown}
+                                    placeholderStyle={styles.placeholderStyle}
+                                    labelField={'label'}
+                                    valueField='value'
+                                    value={values.estado_inicial.estado}
+                                    placeholder="Estado general de huerto"
+                                    onChange={item => setFieldValue('estado_inicial', {
+                                        estado: item.value,
+                                        fecha: new Date()
+                                    })}
+                                    renderItem={(item) => {
+                                        return (<View style={styles.item}>
+                                            <View style={{ backgroundColor: item.color, width: 20, height: 20 }}></View>
+                                            <Text style={styles.textItem}>{item.label}</Text>
+                                        </View>)
+                                    }}
+                                />
+                                <Button mode='contained' style={{ marginHorizontal: 'auto', width: 200 }} onPress={() => handleSubmit()}>Agregar huerto</Button>
+                            </View>
+                        )}
+                    </Formik>
                 </ScrollView>
-
-                <Button mode='contained' style={{ marginHorizontal: 'auto', width: 200 }} onPress={addNewGarden}>Agregar huerto</Button>
                 <Toast position='bottom' />
                 <Toast position='bottom' />
             </Modal>

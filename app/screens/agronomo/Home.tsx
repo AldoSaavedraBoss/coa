@@ -258,8 +258,8 @@ const Home = ({ route, navigation }: { route: any, navigation: any }) => {
                             <FlatList
                                 style={styles.clientsContainer}
                                 data={newClients}
-                                showsVerticalScrollIndicator={false}
-                                contentContainerStyle={{ gap: 16 }}
+                                showsVerticalScrollIndicator={true}
+                                contentContainerStyle={{ gap: 16}}
                                 keyExtractor={client => client.id}
                                 renderItem={({ item }) => {
                                     return (
@@ -279,7 +279,7 @@ const Home = ({ route, navigation }: { route: any, navigation: any }) => {
                                 }}>
 
                             </FlatList>
-                            <Button mode='outlined' onPress={() => setNewClientModal(true)} style={{ width: 230, marginHorizontal: 'auto', marginTop: 40 }}>Agregar un nuevo usuario</Button>
+                            <Button mode='outlined' onPress={() => setNewClientModal(true)} style={{ width: 230, marginHorizontal: 'auto', marginTop: 40 }}>Registrar nuevo productor</Button>
                         </View>
                     )
                 }

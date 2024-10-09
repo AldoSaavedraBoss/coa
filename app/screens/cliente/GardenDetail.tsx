@@ -335,6 +335,7 @@ const GardenDetail = ({ route }: DetallesProps) => {
             </View>
           )
         }
+        <Text>{JSON.stringify(user)}</Text>
       </View>
 
       <ReportModal visible={report} setVisible={setReport} client={client} garden={garden} />

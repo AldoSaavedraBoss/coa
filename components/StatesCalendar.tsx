@@ -5,6 +5,7 @@ import { CalendarProps, ClientProps, DatesData, Meses } from '../interfaces/user
 import { weeksLeapYear, weeksNonLeapYear } from '../lib/yearTypes';
 import { weeksLeapYearStartToEnd, weeksNonLeapYearStartToEnd } from '../lib/calendar'
 import { createClientObjects } from '../lib/calendarCalcs';
+import { useNavigation } from '@react-navigation/native';
 
 interface StateCalendarProps {
   calendar: CalendarProps[]
@@ -13,7 +14,7 @@ interface StateCalendarProps {
 }
 
 const StatesCalendar = ({ clients, dates }: StateCalendarProps) => {
-  console.log('clientes desde la tabla', clients)
+  const navigation = useNavigation()
   const [numberOfItemsPerPageList] = useState([5, 10, 25]);
   const [itemsPerPage, setItemsPerPage] = useState(
     numberOfItemsPerPageList[0]
@@ -24,11 +25,13 @@ const StatesCalendar = ({ clients, dates }: StateCalendarProps) => {
   const leftRef = useRef<ScrollView>(null);
   const rightRef = useRef<ScrollView>(null);
 
-  const leftColumnWidth = 150
+  const leftColumnWidth = 120
   const headerHeight = 40;
   const borderColor = '#C1C0B9';
   const primaryColor = 'dodgerblue';
   const backgroundColor = '#F7F6E7';
+  const rowHeight = 32
+  const widthColumns  = 150
 
 
   useEffect(() => {
@@ -94,7 +97,9 @@ const StatesCalendar = ({ clients, dates }: StateCalendarProps) => {
             {
 
               clients.slice(from, to).map((client, index) => (
-                <Text key={index} style={[{ textAlign: 'center' }, index % 2 ? { height: 28 } : { backgroundColor, height: 28 }]}>{client.nombre}</Text>
+                <View key={index} style={[{ height: rowHeight, justifyContent: 'center' }, index % 2 ? null : { backgroundColor, }]}>
+                  <Text style={{textAlign: 'center', textTransform: 'capitalize'}} onPress={() => navigation.navigate('Huertos del cliente', { client })} >{client.nombre}</Text>
+                </View>
               ))
             }
           </ScrollView>
@@ -106,7 +111,7 @@ const StatesCalendar = ({ clients, dates }: StateCalendarProps) => {
               <View style={{ flexDirection: 'row' }}>
                 {
                   months.map((month, index) => (
-                    <View key={index} style={{ height: 40, backgroundColor: primaryColor, width: 150, borderColor: '#fff', borderStyle: 'solid', borderLeftWidth: 1, borderRightWidth: 1 }}>
+                    <View key={index} style={{ height: 40, backgroundColor: primaryColor, width: widthColumns, borderColor: '#fff', borderStyle: 'solid', borderLeftWidth: 1, borderRightWidth: 1 }}>
                       <Text
                         key={index}
                         style={{ textAlign: 'center', color: 'white', fontWeight: 'bold', textTransform: 'capitalize' }}
@@ -142,12 +147,12 @@ const StatesCalendar = ({ clients, dates }: StateCalendarProps) => {
                   {calendar.slice(from, to).map((client, index) => {
                     let weekCounter = 0
                     return (
-                      <View key={index} style={[{ height: 28, backgroundColor: '#fff', width: 150, borderColor: '#fff', borderStyle: 'solid', borderLeftWidth: 1, borderRightWidth: 1, flexDirection: 'row' }, index % 2 ? { backgroundColor: '#fff' } : { backgroundColor }]}>
+                      <View key={index} style={[{ height: rowHeight, backgroundColor: '#fff', width: widthColumns, borderColor: '#fff', borderStyle: 'solid', borderLeftWidth: 1, borderRightWidth: 1, flexDirection: 'row' }, index % 2 ? { backgroundColor: '#fff' } : { backgroundColor }]}>
                         {
                           months.map((month, monthIndex, arr) => {
 
                             return (
-                              <View key={monthIndex} style={[{ flexDirection: 'row', width: 150, borderColor: '#fff' }, monthIndex === 0 && { borderLeftWidth: 2 }, monthIndex !== 0 && { borderLeftWidth: 2, borderRightWidth: 2 }]}>
+                              <View key={monthIndex} style={[{ flexDirection: 'row', width: widthColumns, borderColor: '#fff' }, monthIndex === 0 && { borderLeftWidth: 2 }, monthIndex !== 0 && { borderLeftWidth: 2, borderRightWidth: 2 }]}>
                                 {
                                   client.meses[monthIndex].map((state, weekIndex) => {
                                     // Definir colores según el estado
@@ -164,7 +169,7 @@ const StatesCalendar = ({ clients, dates }: StateCalendarProps) => {
                                     });
 
                                     return (
-                                      <View key={weekIndex} style={{ height: 28, flex: 1, backgroundColor: bgColor, borderWidth: 1, borderColor: '#e7e7e7', borderRadius: 5 }}>
+                                      <View key={weekIndex} style={{ height: rowHeight, flex: 1, backgroundColor: bgColor, borderWidth: 1, borderColor: '#e7e7e7', borderRadius: 5 }}>
                                         {
                                           cita ? (
                                             // Renderizar el círculo blanco si hay una cita
