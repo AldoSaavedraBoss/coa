@@ -13,7 +13,7 @@ interface StateCalendarProps {
   dates: DatesData[]
 }
 
-const StatesCalendar = ({ clients, dates }: StateCalendarProps) => {
+const StatesCalendar = ({ clients, dates, calendar: changingCalendar }: StateCalendarProps) => {
   const navigation = useNavigation()
   const [numberOfItemsPerPageList] = useState([5, 10, 25]);
   const [itemsPerPage, setItemsPerPage] = useState(
@@ -37,6 +37,7 @@ const StatesCalendar = ({ clients, dates }: StateCalendarProps) => {
   useEffect(() => {
     if (clients.length > 0) setCalendar(createClientObjects(clients))
   }, [clients])
+
 
   useEffect(() => {
     setPage(0);

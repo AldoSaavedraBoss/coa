@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { View, Pressable, StyleSheet, FlatList, ActivityIndicator, ScrollView } from 'react-native'
 import { Text, Button, DataTable, Searchbar } from 'react-native-paper'
-import { clearUserData, getUserData } from '../../../storage/auth';
 import { AuthProps2, CalendarProps, ClientProps, DatesData, ToastData } from '../../../interfaces/user';
 import axios from 'axios'
 // import StateGardenModal from '../../../components/StateGardenModal';
@@ -14,13 +13,14 @@ import RegisterStateModal from '../../../components/RegisterStateModal';
 import db from '../../../SQLite/createTables'
 import { useDrizzleStudio } from 'expo-drizzle-studio-plugin';
 import SafeView from '../../../components/SafeView';
+import useStore from '../../../storage/auth';
 
 type HomeState = 'profile' | 'producers'
 
 
 const Home = ({ route, navigation }: { route: any, navigation: any }) => {
     const { id_user } = route.params || '';
-
+    const {clearUser} = useStore()
     const [tab, setTab] = useState<HomeState>('profile')
     const [user, setUser] = useState<AuthProps2>({
         id: '',
@@ -134,7 +134,6 @@ const Home = ({ route, navigation }: { route: any, navigation: any }) => {
         
         try {
             const result = await db.execAsync([{ sql: "SELECT * FROM usuarios WHERE tecnico_id = ?", args: [id] }], true)
-        console.log('clientes', result[0].rows)
         if(result[0]?.rows?.length > 0) {
             console.log('mas de uno')
             setClients(result[0].rows as ClientProps[])
@@ -176,7 +175,7 @@ const Home = ({ route, navigation }: { route: any, navigation: any }) => {
     }
 
     const logout = async () => {
-        await clearUserData();
+        clearUser()
         navigation.navigate('Login')
     };
 
@@ -227,6 +226,11 @@ const Home = ({ route, navigation }: { route: any, navigation: any }) => {
             text1Style: obj.text1Style,
             text2Style: obj.text2Style,
         })
+    }
+
+    const getNewClientsData = (newClients: ClientProps[]) => {
+        console.log('entro a los neuvos clients')
+        setNewClients(newClients)
     }
 
     return (
@@ -324,7 +328,7 @@ const Home = ({ route, navigation }: { route: any, navigation: any }) => {
                     )
                 }
                 {/* modal for looking garden state */}
-                <RegisterStateModal visible={registerStateModal} setVisible={setRegisterStateModal} clients={clients} getToastData={getToastData} />
+                <RegisterStateModal visible={registerStateModal} setVisible={setRegisterStateModal} clients={clients} getToastData={getToastData} getNewClientsData={getNewClientsData}/>
                 {/* Modal for loking new client modal */}
                 <NewClientModal visible={newClientModal} setVisible={setNewClientModal} techId={user.id} getNewClient={getNewClient} getToastData={getToastData} />
                 <DatesModal visible={showDatesModal} setVisible={setShowDatesModal} clients={clients} getToastData={getToastData} tecnico_id={user.id} />

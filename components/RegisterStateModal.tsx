@@ -6,12 +6,14 @@ import { Dropdown } from 'react-native-element-dropdown';
 import Toast from 'react-native-toast-message';
 import axios from 'axios';
 import db from '../SQLite/createTables'
+import useStore from '../storage/auth';
 
 interface FeaturesModalProps {
     visible: boolean,
     setVisible: React.Dispatch<React.SetStateAction<boolean>>,
     clients: ClientProps[]
     getToastData: (toastObj: ToastData) => void
+    getNewClientsData: (newClients: ClientProps[]) => void
 }
 
 interface NewGardenData {
@@ -21,9 +23,9 @@ interface NewGardenData {
     date: Date
 }
 
-const RegisterStateModal = ({ visible, setVisible, clients, getToastData }: FeaturesModalProps) => {
+const RegisterStateModal = ({ visible, setVisible, clients, getToastData, getNewClientsData }: FeaturesModalProps) => {
     const [newGardenStatus, setNewGardenStatus] = useState<NewGardenData[]>([])
-
+    const {user} = useStore()
     const states = [
         { label: 'Todo bien', color: '#009929', value: 'todo bien' },
         { label: 'Precaución', color: '#ebed17', value: 'precaucion' },
@@ -125,7 +127,7 @@ const RegisterStateModal = ({ visible, setVisible, clients, getToastData }: Feat
                             fecha: newGardenStatus[x].date
                         })
                         const seriallized = JSON.stringify(parsed)
-                        const result = await db.execAsync([{sql: "UPDATE usuarios SET historial_estados_huertos = ? WHERE id = ?", args: [seriallized, clients[i].id]}], false)
+                        const result = await db.execAsync([{ sql: "UPDATE usuarios SET historial_estados_huertos = ? WHERE id = ?", args: [seriallized, clients[i].id] }], false)
                         console.log('registar clientes', result)
                         const toastObj: ToastData = {
                             type: 'success',
@@ -135,6 +137,15 @@ const RegisterStateModal = ({ visible, setVisible, clients, getToastData }: Feat
                             text2Style: { fontSize: 15 },
                         }
                         getToastData(toastObj)
+
+                        const newData = await db.execAsync([{ sql: "SELECT * FROM usuarios where tecnico_id = ?", args: [user.id]}], true)
+                        console.log('clientes', newData[0].rows)
+                        console.log('user_id', user)
+                        if (newData[0]?.rows?.length > 0) {
+                            getNewClientsData(newData[0].rows as ClientProps[])
+                        }
+
+                        // getNewData()
                         didUnmount()
                         break;
                     }

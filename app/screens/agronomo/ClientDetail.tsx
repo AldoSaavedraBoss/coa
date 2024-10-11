@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react'
-import { FlatList, Pressable, View, StyleSheet, ScrollView } from 'react-native'
+import { FlatList, Pressable, View, StyleSheet } from 'react-native'
 import axios from 'axios'
 import { ClientProps, GardenProps, ReportProps, ToastData } from '../../../interfaces/user'
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Text, Card, Button } from 'react-native-paper';
+import { Text, Card, Button, Searchbar } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import ReportModal from '../../../components/ReportModal';
 import NewGardenModal from '../../../components/NewGardenModal';
 import db from '../../../SQLite/createTables';
+import debounce from 'debounce';
 
 type RootStackParamList = {
   ClientDetail: { client: ClientProps }; // Define el tipo de `garden` si lo conoces
@@ -23,12 +24,14 @@ const ClientDetail = ({ route, navigation }: DetallesProps) => {
   const [modalReport, setModalReport] = useState(false)
   const [newGardenModal, setNewGardenModal] = useState(false)
   const [selectedReport, setSelectedReport] = useState<ReportProps | null>(null)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [newReportsList, setNewReportsList] = useState<ReportProps[]>([])
 
 
   useEffect(() => {
     const getData = async () => {
       try {
-        const result = await db.execAsync([{sql: "SELECT * FROM huertos WHERE cliente_id = ?", args: [client.id]}], true)
+        const result = await db.execAsync([{ sql: "SELECT * FROM huertos WHERE cliente_id = ?", args: [client.id] }], true)
         if (result[0].rows.length > 0) setGardens(() => {
           const aux: GardenProps[] = result[0].rows.map((garden: GardenProps) => ({
             ...garden,
@@ -61,7 +64,7 @@ const ClientDetail = ({ route, navigation }: DetallesProps) => {
 
   const getReportHistory = async () => {
     try {
-      const result = await db.execAsync([{sql: "SELECT * FROM reportes WHERE agricultor_id = ?", args: [client.id]}], true)
+      const result = await db.execAsync([{ sql: "SELECT * FROM reportes WHERE agricultor_id = ?", args: [client.id] }], true)
       if (result[0].rows.length > 0) {
         setReportsList(() => {
           return result[0].rows.map((report: any) => ({
@@ -110,6 +113,27 @@ const ClientDetail = ({ route, navigation }: DetallesProps) => {
     setGardens(prev => [...prev].concat(newGarden))
   }
 
+  useEffect(() => {
+    const handleSearch = () => {
+      if (searchQuery.trim() === '') {
+        setNewReportsList(reportsList)
+      } else {
+        filterData()
+      }
+    }
+
+    const debounceFilter = debounce(handleSearch, 200)
+    debounceFilter()
+
+    return () => {
+      debounceFilter.clear()
+    }
+  }, [searchQuery])
+
+  const filterData = () => {
+    const newReports = reportsList.filter(report => report.nombre_huerto.toUpperCase().includes(searchQuery.toUpperCase()))
+    setNewReportsList(newReports)
+  }
 
   return (
     <View style={{ flex: 1 }}>
@@ -139,17 +163,23 @@ const ClientDetail = ({ route, navigation }: DetallesProps) => {
         ) : null
       }
 
-      <View style={{ marginHorizontal: 'auto', gap: 12, marginTop: 10 }}>
+      <View style={{ marginHorizontal: 'auto', gap: 12, marginTop: 10, alignItems: 'center' }}>
         <Button icon='account-plus' mode='contained' onPress={() => setNewGardenModal(true)} style={{ width: 200 }}>Agregar nuevo huerto</Button>
-        <Button icon='format-list-bulleted' mode='contained' onPress={getReportHistory} style={{ width: 200, marginBottom: 40 }}>Ver historial de reportes</Button>
+        <Button icon='format-list-bulleted' mode='contained' onPress={getReportHistory} style={{ width: 250, marginBottom: 40 }}>Ver historial de reportes</Button>
       </View>
 
       {
         reportsList.length > 0 && (
           <View style={{ flex: 1 }}>
+            <Searchbar
+              placeholder="Search"
+              onChangeText={setSearchQuery}
+              value={searchQuery}
+              style={{ marginTop: 20 }}
+            />
             <FlatList
               style={{ marginTop: 20 }}
-              data={reportsList}
+              data={newReportsList}
               renderItem={({ item, index }) => (
                 <Card key={item.id} style={{ marginBottom: 20 }} onPress={() => {
                   setSelectedReport(item)
