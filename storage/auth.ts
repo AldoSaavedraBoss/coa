@@ -1,28 +1,29 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { AuthProps } from '../interfaces/user'
+import { create } from "zustand";
+import { AuthProps2 } from "../interfaces/user";
 
-export const saveUserData = async (data: AuthProps) => {
-  try {
-    await AsyncStorage.setItem('@user_data', JSON.stringify(data))
-  } catch (error) {
-    console.error('Error al guardar datos:', error)
-  }
+interface IStore {
+  user: AuthProps2,
+  saveUser: (newUser: AuthProps2) => void
+  clearUser: () => void
 }
 
-export const getUserData = async () => {
-  try {
-    const data = await AsyncStorage.getItem('@user_data')
-    return data ? JSON.parse(data) : null
-  } catch (error) {
-    console.error('Error al recuperar datos:', error)
-    return null
-  }
+const initialState: AuthProps2 = {
+  id: '',
+  apellido: '',
+  creacion: '',
+  email: '',
+  nombre: '',
+  rol: ''
 }
 
-export const clearUserData = async () => {
-  try {
-    await AsyncStorage.removeItem('@user_data')
-  } catch (error) {
-    console.error('Error al eliminar datos:', error)
-  }
-}
+const useStore = create<IStore>((set) => ({
+  user: initialState,
+  saveUser: (newUser: AuthProps2) => set((state) => ({
+    user: newUser
+  })),
+  clearUser: () => set(state => ({
+    user: initialState
+  }))
+}))
+
+export default useStore

@@ -3,11 +3,11 @@ import { ActivityIndicator, KeyboardAvoidingView, Pressable, StyleSheet, Text, T
 import { Button } from 'react-native-paper'
 import axios from 'axios'
 import { useNavigation } from '@react-navigation/native'
-import { saveUserData, getUserData, clearUserData } from '../../storage/auth'
 import { AuthProps2 } from '../../interfaces/user'
 import db, { createTables } from '../../SQLite/createTables'
 import Toast from 'react-native-toast-message'
 import ResetPasswordModal from '../../components/ResetPassword'
+import useStore from '../../storage/auth'
 
 const Login = () => {
     // const db = useSQLiteContext()
@@ -15,6 +15,7 @@ const Login = () => {
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
     const [visibleResetPass, setVisibleResetPass] = useState(false)
+    const { saveUser } = useStore();
 
     const navigation = useNavigation()
 
@@ -37,34 +38,34 @@ const Login = () => {
         }
     };
 
-    const checkAuthStatus = async () => {
-        try {
-            //Authprops tiene el token
-            const user: AuthProps2 = await getUserData()
-            const token = user?.token
-            if (token) {
-                const isValid = await verifyToken(token);
-                if (isValid) {
-                    // Token válido, redirige al usuario a la pantalla principal
-                    console.log('Token válido, usuario autenticado');
-                    // Navegar a la pantalla principal o inicializar la app
-                    user.data.rol === 'tecnico' ? navigation.navigate('TecnicLayout') : navigation.navigate('ClientLayout')
-                } else {
-                    // Token inválido o expirado, eliminar el token y redirigir al inicio de sesión
-                    console.log('Token inválido, redirigiendo al inicio de sesión');
-                    await clearUserData()
-                    // Navegar a la pantalla de inicio de sesión
-                }
-            } else {
-                // No hay token, redirigir al inicio de sesión
-                console.log('No hay token, redirigiendo al inicio de sesión');
-                // Navegar a la pantalla de inicio de sesión
-            }
-        } catch (error) {
-            console.error('Error al comprobar el estado de autenticación', error);
-            // Manejo de errores
-        }
-    };
+    // const checkAuthStatus = async () => {
+    //     try {
+    //         //Authprops tiene el token
+    //         const user: AuthProps2 = await getUserData()
+    //         const token = user?.token
+    //         if (token) {
+    //             const isValid = await verifyToken(token);
+    //             if (isValid) {
+    //                 // Token válido, redirige al usuario a la pantalla principal
+    //                 console.log('Token válido, usuario autenticado');
+    //                 // Navegar a la pantalla principal o inicializar la app
+    //                 user.data.rol === 'tecnico' ? navigation.navigate('TecnicLayout') : navigation.navigate('ClientLayout')
+    //             } else {
+    //                 // Token inválido o expirado, eliminar el token y redirigir al inicio de sesión
+    //                 console.log('Token inválido, redirigiendo al inicio de sesión');
+    //                 await clearUserData()
+    //                 // Navegar a la pantalla de inicio de sesión
+    //             }
+    //         } else {
+    //             // No hay token, redirigir al inicio de sesión
+    //             console.log('No hay token, redirigiendo al inicio de sesión');
+    //             // Navegar a la pantalla de inicio de sesión
+    //         }
+    //     } catch (error) {
+    //         console.error('Error al comprobar el estado de autenticación', error);
+    //         // Manejo de errores
+    //     }
+    // };
 
     const signIn = async () => {
         setLoading(true)
@@ -87,9 +88,21 @@ const Login = () => {
                 // const result2 = await tx.executeSqlAsync("SELECT * from autenticacion", [])
                 // console.log('resultado2', result2.rows)
                 console.log('login count', result)
-                const id_user: number = result.rows[0].id
+                
                 if (result.rows[0]['COUNT(*)'] > 0) {
-                    navigation.navigate('Inicio', { id_user })
+                    const userResult = await tx.executeSqlAsync("SELECT nombre, apellido, creacion, email, rol from usuarios where id = ?", [result.rows[0].id])
+
+                    const user: AuthProps2 = {
+                        id: result.rows[0].id,
+                        apellido: userResult.rows[0]?.apellido || '',
+                        creacion: userResult.rows[0]?.creacion || '',
+                        email: userResult.rows[0]?.email || '',
+                        nombre: userResult.rows[0]?.nombre || '',
+                        rol: userResult.rows[0]?.rol || ''
+                    }
+
+                    saveUser(user)
+                    navigation.navigate('Inicio', { id_user: user.id })
                 } else {
                     Toast.show({
                         type: "error",

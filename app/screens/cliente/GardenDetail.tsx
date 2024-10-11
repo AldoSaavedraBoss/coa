@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, View, Dimensions, FlatList, } from 'react-native'
 import { Button, Card, Text, List, Icon, Divider, IconButton } from 'react-native-paper';
 import { AuthProps2, ClientProps, GardenProps, ReportProps } from '../../../interfaces/user';
-import { getUserData } from '../../../storage/auth';
+// import { getUserData } from '../../../storage/auth';
 import ReportModal from '../../../components/ReportModal';
 import Toast from 'react-native-toast-message';
 import { BarChart } from 'react-native-chart-kit';
@@ -12,7 +12,7 @@ import db from '../../../SQLite/createTables';
 import SuggestionsModal from '../../../components/SuggestionsModal';
 import FeaturesModal from '../../../components/FeaturesModal';
 import FertilizerModal from '../../../components/FertilizerModal';
-import { err } from 'react-native-svg';
+import useStore from '../../../storage/auth';
 
 type States = 'features' | 'suggestions' | 'nutrition' | 'pests'
 
@@ -23,7 +23,7 @@ type RootStackParamList = {
 type DetallesProps = NativeStackScreenProps<RootStackParamList, 'Detalles'>;
 
 const GardenDetail = ({ route }: DetallesProps) => {
-
+const {user} = useStore()
   const featuresToObject = (features: any) => {
     return features.map(characteristicObj => {
       return Object.entries(characteristicObj).map(([key, value]) => ({
@@ -35,14 +35,14 @@ const GardenDetail = ({ route }: DetallesProps) => {
 
   const { garden } = route.params;
   const { client } = route.params;
-  const [user, setUser] = useState<AuthProps2>({
-    id: '',
-    apellido: '',
-    creacion: '',
-    email: '',
-    nombre: '',
-    rol: '',
-  })
+  // const [user, setUser] = useState<AuthProps2>({
+  //   id: '',
+  //   apellido: '',
+  //   creacion: '',
+  //   email: '',
+  //   nombre: '',
+  //   rol: '',
+  // })
   const [tab, setTab] = useState<States>('suggestions');
   const [report, setReport] = useState(false)
   const [suggestions, setSuggestions] = useState<string[]>(garden.recomendaciones)
@@ -74,7 +74,7 @@ const GardenDetail = ({ route }: DetallesProps) => {
   // useEffect(() => {
   //   const getData = async () => {
   //     try {
-  //       const result: AuthProps2 | null = await db.getFirstAsync('SELECT * from usuarios WHERE id = ?', id_user)
+  //       const result: AuthProps2 | null = await db.execAsync([{sql: "SELECT * from usuarios WHERE id = ?"}], [id_user], true)
   //       console.log('resultado', result.id, id_user)
   //       if (result !== null && Object.keys(result).length) {
   //         setUser(result);
@@ -335,7 +335,6 @@ const GardenDetail = ({ route }: DetallesProps) => {
             </View>
           )
         }
-        <Text>{JSON.stringify(user)}</Text>
       </View>
 
       <ReportModal visible={report} setVisible={setReport} client={client} garden={garden} />

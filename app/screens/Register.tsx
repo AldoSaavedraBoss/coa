@@ -6,6 +6,7 @@ import db from '../../SQLite/createTables'
 import { useNavigation } from '@react-navigation/native'
 import { Button, IconButton, Text, TextInput } from 'react-native-paper'
 import Toast from 'react-native-toast-message'
+import useStore from '../../storage/auth';
 
 const Register = () => {
     const navigation = useNavigation()
@@ -14,6 +15,7 @@ const Register = () => {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [password2, setPassword2] = useState('')
+    const { saveUser } = useStore()
 
     const handleRegister = async () => {
         const isValid = validate()
@@ -25,7 +27,7 @@ const Register = () => {
                 console.log('id es:', id)
 
                 const count = await tx.executeSqlAsync("SELECT COUNT(*) FROM autenticacion WHERE email = ?", [email]);
-                console.log('despues de la consulta',count)
+                console.log('despues de la consulta', count)
 
                 if (count.rows[0]["COUNT(*)"] > 0) {
                     Toast.show({
@@ -42,12 +44,20 @@ const Register = () => {
 
                 const insertUsers = await tx.executeSqlAsync("INSERT INTO usuarios (id, apellido, creacion, email,  nombre, rol) VALUES (?,?,?,?,?,?)", [id, lastname.trim(), new Date().toString(), email.trim(), name.trim(), 'tecnico'])
 
-                const info = await tx.executeSqlAsync("SELECT * FROM usuarios;")
-                console.log('info de usuarios', info.rows)
 
                 console.log('inserts', insertAuth, insertUsers)
-                
-                if (insertAuth.rowsAffected > 0 && insertUsers.rowsAffected > 0) navigation.navigate('Inicio', { id_user: id })
+
+                if (insertAuth.rowsAffected > 0 && insertUsers.rowsAffected > 0) {
+                    saveUser({
+                        id,
+                        apellido: lastname.trim(),
+                        creacion: new Date().toString(),
+                        email: email.trim(),
+                        nombre: name.trim(),
+                        rol: 'tecnico'
+                    })
+                    navigation.navigate('Inicio', { id_user: id })
+                }
             })
             // console.error('No se pudo registrar en autenticacion')
             // console.error('No se pudo registrar en usaurios')
@@ -117,7 +127,7 @@ const Register = () => {
             <IconButton icon='keyboard-backspace' onPress={() => navigation.goBack()} />
             <Text variant='titleLarge' style={{ textAlign: 'center' }}>Registro de tecnico</Text>
             <View style={{ flex: 1, justifyContent: 'center', alignContent: 'center', gap: 20 }}>
-                <TextInput label="Nombre" value={name} onChangeText={text => setName(text.trim())} autoFocus />
+                <TextInput label="Nombre" value={name} onChangeText={text => setName(text)} autoFocus />
                 <TextInput
                     label="Apellidos"
                     value={lastname}
