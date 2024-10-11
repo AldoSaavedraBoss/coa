@@ -1,6 +1,6 @@
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid'
-import { View } from 'react-native'
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import React, { useState } from 'react'
 import db from '../../SQLite/createTables'
 import { useNavigation } from '@react-navigation/native'
@@ -123,45 +123,55 @@ const Register = () => {
     }
 
     return (
-        <View style={{ flex: 1, paddingVertical: 40, paddingHorizontal: 20 }}>
-            <IconButton icon='keyboard-backspace' onPress={() => navigation.goBack()} />
-            <Text variant='titleLarge' style={{ textAlign: 'center' }}>Registro de tecnico</Text>
-            <View style={{ flex: 1, justifyContent: 'center', alignContent: 'center', gap: 20 }}>
-                <TextInput label="Nombre" value={name} onChangeText={text => setName(text)} autoFocus />
-                <TextInput
-                    label="Apellidos"
-                    value={lastname}
-                    onChangeText={text => setLastname(text)}
-                />
-                <TextInput
-                    label="Email"
-                    value={email}
-                    onChangeText={text => setEmail(text)}
-                    autoCapitalize='none'
-                    keyboardType='email-address'
-                />
-                <TextInput
-                    label="Contraseña"
-                    value={password}
-                    onChangeText={text => setPassword(text)}
-                    secureTextEntry
-                />
-                <TextInput
-                    label="Confirmar contraseña"
-                    value={password2}
-                    onChangeText={text => setPassword2(text)}
-                    secureTextEntry
-                />
-            </View>
-            <Button
-                mode="contained"
-                onPress={handleRegister}
-                style={{ width: 200, marginHorizontal: 'auto' }}
-            >
-                Aceptar
-            </Button>
-            <Toast position="bottom" />
-        </View>
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={10} // Ajusta este valor según el diseño
+        >
+            <ScrollView style={{ flex: 1, paddingVertical: 40, paddingHorizontal: 20 }} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+
+                <IconButton icon='keyboard-backspace' onPress={() => navigation.goBack()} />
+                <Text variant='titleLarge' style={{ textAlign: 'center' }}>Registro de tecnico</Text>
+                <View style={{ flexGrow: 1, paddingVertical: 40, paddingHorizontal: 20, justifyContent: 'space-between', gap: 20 }}>
+                    <View style={{ gap: 20 }}>
+                        <TextInput label="Nombre" value={name} onChangeText={text => setName(text)} autoFocus />
+                        <TextInput
+                            label="Apellidos"
+                            value={lastname}
+                            onChangeText={text => setLastname(text)}
+                        />
+                        <TextInput
+                            label="Email"
+                            value={email}
+                            onChangeText={text => setEmail(text)}
+                            autoCapitalize='none'
+                            keyboardType='email-address'
+                        />
+                        <TextInput
+                            label="Contraseña"
+                            value={password}
+                            onChangeText={text => setPassword(text)}
+                            secureTextEntry
+                        />
+                        <TextInput
+                            label="Confirmar contraseña"
+                            value={password2}
+                            onChangeText={text => setPassword2(text)}
+                            secureTextEntry
+                        />
+
+                    </View>
+                    <Button
+                        mode="contained"
+                        onPress={handleRegister}
+                        style={{ width: 200, marginHorizontal: 'auto' }}
+                    >
+                        Aceptar
+                    </Button>
+                </View>
+                <Toast position="bottom" />
+            </ScrollView>
+        </KeyboardAvoidingView>
     )
 }
 

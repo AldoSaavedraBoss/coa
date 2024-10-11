@@ -124,7 +124,7 @@ const NewGardenModal = ({ visible, setVisible, client, getToastData, getNewGarde
     return (
         <Portal>
             <Modal visible={visible} onDismiss={() => setVisible(false)} style={{ backgroundColor: '#ffffff', paddingHorizontal: 10, paddingVertical: 40 }}>
-                <ScrollView style={{ marginBottom: 50 }}>
+                <ScrollView>
                     <IconButton
                         icon="close"
                         iconColor='#777777'

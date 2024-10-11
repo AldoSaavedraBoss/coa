@@ -133,8 +133,7 @@ const SuggestionsModal = ({ visible, setVisible, garden, getSuggestions }: Sugge
                             ))
                         }
                     </View>
-                </ScrollView>
-                <IconButton
+                    <IconButton
                     icon="plus"
                     mode="contained"
                     iconColor="#ffffff"
@@ -144,6 +143,8 @@ const SuggestionsModal = ({ visible, setVisible, garden, getSuggestions }: Sugge
                 />
 
                 <Button onPress={postGeneralSuggestions}>Agregar recomendaciones</Button>
+                </ScrollView>
+                
                 <Toast position='bottom' />
             </Modal>
         </Portal>
