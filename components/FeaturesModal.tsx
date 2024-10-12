@@ -146,7 +146,7 @@ const FeaturesModal = ({ visible, setVisible, characteristics, garden, edit = fa
 
     return (
         <Portal>
-            <Modal visible={visible} onDismiss={() => setVisible(false)} style={{ backgroundColor: '#ffffff', paddingHorizontal: 10, paddingVertical: 40 }}>
+            <Modal visible={visible} onDismiss={() => setVisible(false)} contentContainerStyle={{ backgroundColor: '#ffffff', paddingHorizontal: 10, paddingVertical: 40 }}>
                 <View style={{ gap: 10 }}>
                     <IconButton
                         icon="close"
@@ -165,6 +165,7 @@ const FeaturesModal = ({ visible, setVisible, characteristics, garden, edit = fa
                                 ItemSeparatorComponent={() => (
                                     <View style={{ height: 10 }}></View>
                                 )}
+                                style={{height: 200}}
                                 keyExtractor={(item) => uuidv4()}
                                 renderItem={({ item }) => (
                                     <TextInput
